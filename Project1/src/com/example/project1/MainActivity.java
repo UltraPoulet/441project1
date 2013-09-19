@@ -2,7 +2,11 @@ package com.example.project1;
 
 import android.os.Bundle;
 import android.app.Activity;
+import android.content.Intent;
 import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
 
 public class MainActivity extends Activity {
 
@@ -20,4 +24,19 @@ public class MainActivity extends Activity {
         return true;
     }
     
+    public boolean onOptionsItemSelected(MenuItem item) {
+    	EditTextModified etm = (EditTextModified)this.getCurrentFocus();
+    	switch (item.getItemId()) {
+	        case R.id.action_settings:
+	        	return true;
+	        case R.id.action_undo:
+	        	etm.UndoRedoHandler(true);
+	        	return true;
+	        case R.id.action_redo:
+	        	etm.UndoRedoHandler(false);
+	        	return true;
+	        default:
+	        	return super.onOptionsItemSelected(item);
+    	}
+    }
 }
