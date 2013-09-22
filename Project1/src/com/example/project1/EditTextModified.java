@@ -4,7 +4,6 @@ import com.example.project1.History.Type;
 
 import android.content.Context;
 import android.util.AttributeSet;
-import android.view.KeyEvent;
 import android.widget.EditText;
 import android.widget.Toast;
 
