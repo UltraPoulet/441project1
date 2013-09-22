@@ -19,14 +19,17 @@ public class EditTextModified extends EditText{
 	
 	public EditTextModified(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
+		setLongClickable(false);
 	}
 
 	public EditTextModified(Context context, AttributeSet attrs) {
 	    super(context, attrs);
+	    setLongClickable(false);
 	}
 
 	public EditTextModified(Context context) {
 	    super(context);
+	    setLongClickable(false);
 	}
 
 	@Override

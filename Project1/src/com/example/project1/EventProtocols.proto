@@ -1,0 +1,28 @@
+package com.example.project1;
+
+//Message for someone adding a letter to text
+message EventAdd{
+  required int64 partID = 1; //Participant ID of person adding
+  required string char = 2; //The character added to the document
+}
+
+//Message for someone deleting a letter in text
+message EventDel{
+  required int64 partID = 1; //Participant ID of person deleting
+}
+
+//Message for someone moving cursor
+message EventMove{
+  required int64 partID = 1; //Participant ID of person moving cursor
+  required int64 newLoc = 2; //Location of cursor
+}
+
+//Message for someone who just joined document (after they have caught up on events)
+message EventJoin{
+  required int64 partID = 1; //Participant ID of person who just joined (To initialize cursor loc)
+}
+
+//Message for someone who just disconnected from document
+message EventLeave{
+  required int64 partID = 1; //Participant ID of person who just left (To remove from list)
+}
