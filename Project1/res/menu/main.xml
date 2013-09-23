@@ -5,18 +5,20 @@
         android:orderInCategory="100"
         android:showAsAction="never"
         android:title="@string/action_settings"/>
-    <item
+    
+   <item
         android:id="@+id/action_undo"
         android:orderInCategory="150"
         android:title="@string/action_undo"/>
-    <item
+        
+   <item
         android:id="@+id/action_redo"
         android:orderInCategory="200"
         android:title="@string/action_redo"/>
-    
     <item
         android:id="@+id/action_createSession"
         android:orderInCategory="250"
-        android:title="@string/action_createSession" />
+        android:title="@string/action_createSession"/>
+
 
 </menu>
