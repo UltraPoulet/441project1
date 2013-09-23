@@ -7,6 +7,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 public class MainActivity extends Activity {
+	
+	//public CollabrifyClient myClient;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +37,21 @@ public class MainActivity extends Activity {
 			return true;
 		case R.id.action_createSession:
 			Log.d("Create", "Create Session");
+			/*try{
+				myClient = new CollabrifyClient(this, "user email", "user display name", "441fall2013@umich.edu", "XY3721425NoScOpE", false, new CollabrifyAdapterExtended() );
+			}
+			catch(CollabrifyException e ){
+				e.printStackTrace();
+			}
+			try{
+				String sessionName = "Rabideau";
+				myClient.createSession(sessionName, null, null, 0);
+				Log.i("Tag", "Session name is " + sessionName);
+			}
+			catch( CollabrifyException e ){
+				Log.e("Tag", "error", e);
+			}*/
+			 
 			return true;
 		default:
 			return super.onOptionsItemSelected(item);
