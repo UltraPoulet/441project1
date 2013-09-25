@@ -19,6 +19,23 @@
         android:id="@+id/action_createSession"
         android:orderInCategory="250"
         android:title="@string/action_createSession"/>
+    
+    <item
+        android:id="@+id/action_endSession"
+        android:orderInCategory="250"
+        android:visible="false"
+        android:title="@string/action_endSession"/>
+    
+    <item
+        android:id="@+id/action_joinSession"
+        android:orderInCategory="300"
+        android:title="@string/action_joinSession"/>
+    
+    <item
+        android:id="@+id/action_leaveSession"
+        android:orderInCategory="300"
+        android:visible="false"
+        android:title="@string/action_leaveSession"/>
 
 
 </menu>

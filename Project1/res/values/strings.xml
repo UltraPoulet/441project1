@@ -8,5 +8,8 @@
     <string name="action_undo">Undo</string>
     <string name="action_redo">Redo</string>
     <string name="action_createSession">Create Session</string>
+    <string name="action_endSession">End Session</string>
+    <string name="action_joinSession">Join Session</string>
+    <string name="action_leaveSession">Leave Session</string>
 
 </resources>
