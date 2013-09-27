@@ -9,6 +9,7 @@ import edu.umich.imlc.collabrify.client.CollabrifyClient;
 import edu.umich.imlc.collabrify.client.CollabrifyListener;
 import edu.umich.imlc.collabrify.client.CollabrifySession;
 import edu.umich.imlc.collabrify.client.exceptions.CollabrifyException;
+import edu.umich.imlc.collabrify.client.exceptions.ConnectException;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
@@ -31,8 +32,8 @@ public class SubActivity extends Activity
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_main);
-
+		setContentView(R.layout.activity_main);		
+		
 		collabrify = new CollabrifyAdapter() {
 			@Override
 			public void onDisconnect()
@@ -43,7 +44,7 @@ public class SubActivity extends Activity
 					@Override
 					public void run()
 					{
-						Intent i = new Intent(null, MainActivity.class);
+						Intent i = new Intent(getBaseContext(), MainActivity.class);
 						startActivity(i);
 					}
 				});
@@ -71,16 +72,6 @@ public class SubActivity extends Activity
 			 	//switch and start the intent
 			 	Log.i("Tag", "Session created: " + id);
 			 	sessionID = id;
-			 	runOnUiThread(new Runnable()
-			 	{
-			 		@Override
-			 		public void run()
-			 		{
-			 			//need this to be null, .class file
-			 			Intent i = new Intent(null, SubActivity.class);
-			 			startActivity(i);
-			 		}
-			 	});
 			}
 	
 			@Override
@@ -96,17 +87,47 @@ public class SubActivity extends Activity
 			}
 		};
 		
-		
 		try{
 			myClient = new CollabrifyClient(this, "johnrabi@umich.edu", "user display name", "441fall2013@umich.edu", "XY3721425NoScOpE", false, collabrify );
 		}
 		catch (CollabrifyException e){
 			Log.e("Error", "Error creating client", e);
 		}
-		
-		
 		tags.add("Default");
-		Log.i("Tag", "Added to tags");
+		
+		String vars = getIntent().getStringExtra("name");
+		if(vars != null)
+		{
+			sessionName = vars;
+			try {
+				myClient.createSession(sessionName, tags, null, 0);
+				sessionID = myClient.currentSessionId();
+				Log.i("Tag", "In session: " + sessionID);
+			} catch (Exception e) {
+				
+			}
+		}
+		else {
+			//get list
+			long id = getIntent().getLongExtra("id", -1);
+			if(id != -1) {
+				sessionID = id;
+				Log.i("Tag", "Session Joined " + sessionID);
+				try {
+					myClient.joinSession(sessionID, null);
+				} 
+				catch (Exception e1) {
+					e1.printStackTrace();
+				}
+			}
+			else {
+				Log.e("Tag", "Invalid sessionID");
+				Intent i = new Intent(getBaseContext(), MainActivity.class);
+				startActivity(i);
+			}
+		}
+			
+		
 	}
 
 	@Override
@@ -133,36 +154,7 @@ public class SubActivity extends Activity
 		case R.id.action_redo:
 			etm.UndoRedoHandler(false);
 			return true;
-		case R.id.action_createSession:
-			Log.d("Create", "Create Session");
-			createSessionVis = false;
-			endSessionVis = true;
-			joinSessionVis = false;
-			leaveSessionVis = false;
-			this.invalidateOptionsMenu();
-						
-			//This is trying to create a session
-			try{
-				Random rand = new Random();
-				String sessionName = "Rabideau" + rand.nextInt(Integer.MAX_VALUE);
-				//should probably handle with base session...
-				myClient.createSession(sessionName, tags, null, 0);
-				Log.d("Tag", "Session name is " + sessionName);
-			}
-			catch( CollabrifyException e ){
-				Log.e("Tag", "error", e);
-			}
-			
-			try{
-				myClient.requestSessionList(tags);
-				Log.d("Test", "Can it find a sessionlist?");
-			}
-			catch( CollabrifyException e){
-				e.printStackTrace();
-			}
-			
-			return true;
-		case R.id.action_endSession: //what is this? Isn't ending a session just owner leave?
+		case R.id.action_endSession: 
 			Log.d("End", "Ended session");
 			createSessionVis = true;
 			endSessionVis = false;
@@ -179,17 +171,6 @@ public class SubActivity extends Activity
 				Log.e("Error", "Error ending session");
 			}
 			return true;
-		case R.id.action_joinSession:
-			Log.d("Join", "Join session");
-			createSessionVis = false;
-			endSessionVis = false;
-			joinSessionVis = false;
-			leaveSessionVis = true;
-			this.invalidateOptionsMenu();
-			//snag and display available sessions
-			try { myClient.requestSessionList(tags); }
-			catch (Exception e) { Log.e("Tag", "error", e); }
-			return true;
 		case R.id.action_leaveSession:
 			Log.d("Leave", "Leave session");
 			createSessionVis = true;
@@ -199,12 +180,12 @@ public class SubActivity extends Activity
 			this.invalidateOptionsMenu();
 			try{
 				if(myClient.inSession())
-					myClient.leaveSession(true);
+					myClient.leaveSession(false);
 				else
 					Log.d("Test", "Why am I even here?");
 			}
 			catch ( CollabrifyException e ){
-				Log.e("Error", "Error ending session");
+				Log.e("Error", "Error ending session " + e);
 			}
 			return true;
 		default:

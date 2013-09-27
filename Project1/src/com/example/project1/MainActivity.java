@@ -43,13 +43,7 @@ public class MainActivity extends Activity {
 			{
 				Log.i("Tag", "Disconnected from session.");
 			}
-			
-			@Override
-			public void onReceiveEvent(final long orderId, int subId, String eventType, final byte[] data)
-		    {
-				//handle the incoming event
-		    }
-			
+
 			@Override
 		      public void onReceiveSessionList(final List<CollabrifySession> sessionList)
 		      {
@@ -68,16 +62,18 @@ public class MainActivity extends Activity {
 				      @Override
 				      public void onClick(DialogInterface dialog, int which)
 				      {
-				try
-				{
-				  sessionID = sessionList.get(which).id();
-				  sessionName = sessionList.get(which).name();
-				  myClient.joinSession(sessionID, null);
-				}
-				catch( CollabrifyException e ){Log.e("Tag", "error", e);}
+						try
+						{
+						  sessionID = sessionList.get(which).id();
+						  sessionName = sessionList.get(which).name();
+						  Intent i = new Intent(getBaseContext(), SubActivity.class);
+						  i.putExtra("id", sessionID);
+						  startActivity(i);
+						}
+						catch( Exception e ){Log.e("Tag", "error", e);}
 				      }
 				    }
-					    );
+				);
 		
 				runOnUiThread(new Runnable()
 				{
@@ -91,34 +87,11 @@ public class MainActivity extends Activity {
 		      }
 
 		      @Override
-		      public void onSessionCreated(long id)
-		      {
-		    	  //switch and start the intent
-		    	  Log.i("Tag", "Session created: " + id);
-		    	  sessionID = id;
-		    	  runOnUiThread(new Runnable()
-		    	  {
-		    		@Override
-		    		public void run()
-		    		{
-		    			//need this to be null, .class file
-		    			Intent i = new Intent(getBaseContext(), SubActivity.class);
-		    			startActivity(i);
-		    		}
-		    	  });
-		      }
-
-		      @Override
 		      public void onError(CollabrifyException e)
 		      {
 		    	  Log.e("Tag", "error", e);
 		      }
 
-		      @Override
-		      public void onSessionJoined(long maxOrderId, long baseFileSize)
-		      {
-		    	  //no idea what we need here
-		      }
 		};
 		
 		
@@ -165,35 +138,25 @@ public class MainActivity extends Activity {
 			joinSessionVis = false;
 			leaveSessionVis = false;
 			this.invalidateOptionsMenu();
-						
+			
 			//This is trying to create a session
-			try{
-				Random rand = new Random();
-				String sessionName = "Rabideau" + rand.nextInt(Integer.MAX_VALUE);
-				//should probably handle with base session...
-				myClient.createSession(sessionName, tags, null, 0);
-				Log.d("Tag", "Session name is " + sessionName);
-			}
-			catch( CollabrifyException e ){
-				Log.e("Tag", "error", e);
-			}
+			Random rand = new Random();
+			sessionName = "Rabideau" + rand.nextInt(Integer.MAX_VALUE);
+			Log.d("Tag", "Session name is " + sessionName);
 			
-			try{
-				myClient.requestSessionList(tags);
-				Log.d("Test", "Can it find a sessionlist?");
-			}
-			catch( CollabrifyException e){
-				e.printStackTrace();
-			}
+			runOnUiThread(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					//need this to be null, .class file
+					Intent i = new Intent(getBaseContext(), SubActivity.class);
+					i.putExtra("name", sessionName);
+					System.out.println(i.getExtras().getString("name"));
+					startActivity(i);
+				}
+			});
 			
-			return true;
-		case R.id.action_endSession: //what is this? Isn't ending a session just owner leave?
-			Log.d("End", "Ended session");
-			createSessionVis = true;
-			endSessionVis = false;
-			joinSessionVis = true;
-			leaveSessionVis = false;
-			this.invalidateOptionsMenu();
 			return true;
 		case R.id.action_joinSession:
 			Log.d("Join", "Join session");
@@ -205,23 +168,6 @@ public class MainActivity extends Activity {
 			//snag and display available sessions
 			try { myClient.requestSessionList(tags); }
 			catch (Exception e) { Log.e("Tag", "error", e); }
-			return true;
-		case R.id.action_leaveSession:
-			Log.d("Leave", "Leave session");
-			createSessionVis = true;
-			endSessionVis = false;
-			joinSessionVis = true;
-			leaveSessionVis = false;
-			this.invalidateOptionsMenu();
-			try{
-				if(myClient.inSession())
-					myClient.leaveSession(true);
-				else
-					Log.d("Test", "Why am I even here?");
-			}
-			catch ( CollabrifyException e ){
-				Log.e("Error", "Error ending session");
-			}
 			return true;
 		default:
 			return super.onOptionsItemSelected(item);
