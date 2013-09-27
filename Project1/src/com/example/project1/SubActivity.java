@@ -9,20 +9,15 @@ import edu.umich.imlc.collabrify.client.CollabrifyClient;
 import edu.umich.imlc.collabrify.client.CollabrifyListener;
 import edu.umich.imlc.collabrify.client.CollabrifySession;
 import edu.umich.imlc.collabrify.client.exceptions.CollabrifyException;
-import android.os.Bundle;
-import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
-@SuppressLint("NewApi")
-public class MainActivity extends Activity {
-
-	
+public class SubActivity extends Activity
+{
 	public CollabrifyClient myClient;
 	boolean createSessionVis = true;
 	boolean endSessionVis = false;
@@ -37,88 +32,77 @@ public class MainActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		//huh?
+		/*
+		try{
+			CollabrifyAdapterExtended adapter = new CollabrifyAdapterExtended();
+			myClient = new CollabrifyClient(this, "johnrabi@umich.edu", "user display name", "441fall2013@umich.edu", "XY3721425NoScOpE", false, adapter );
+		}
+		catch (CollabrifyException e){
+			Log.e("Error", "Error creating client", e);
+		}
+		*/
 		collabrify = new CollabrifyAdapter() {
 			@Override
 			public void onDisconnect()
 			{
 				Log.i("Tag", "Disconnected from session.");
+				runOnUiThread(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						Intent i = new Intent(null, MainActivity.class);
+						startActivity(i);
+					}
+				});
 			}
 			
 			@Override
 			public void onReceiveEvent(final long orderId, int subId, String eventType, final byte[] data)
-		    {
+			{
 				//handle the incoming event
-		    }
+			}
 			
 			@Override
-		      public void onReceiveSessionList(final List<CollabrifySession> sessionList)
-		      {
-				if( sessionList.isEmpty() )
-				{
-				  Log.i("Tag", "No session available");
-				  return;
-				}
-				List<String> sessionNames = new ArrayList<String>();
-				for(CollabrifySession session : sessionList )
-				  sessionNames.add(session.name());
-				final AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-				builder.setTitle("Choose Session").setItems(
-					sessionNames.toArray(new String[sessionList.size()]), new DialogInterface.OnClickListener()
+			public void onReceiveSessionList(final List<CollabrifySession> sessionList)
+			{
+					if( sessionList.isEmpty() )
 					{
-				      @Override
-				      public void onClick(DialogInterface dialog, int which)
-				      {
-				try
-				{
-				  sessionID = sessionList.get(which).id();
-				  sessionName = sessionList.get(which).name();
-				  myClient.joinSession(sessionID, null);
-				}
-				catch( CollabrifyException e ){Log.e("Tag", "error", e);}
-				      }
-				    }
-					    );
-		
-				runOnUiThread(new Runnable()
-				{
-		
-				  @Override
-				  public void run()
-				  {
-				    builder.show();
-				  }
-				});
-		      }
-
-		      @Override
-		      public void onSessionCreated(long id)
-		      {
-		    	  //switch and start the intent
-		    	  Log.i("Tag", "Session created: " + id);
-		    	  sessionID = id;
-		    	  //runOnUiThread(new Runnable()
-		    	  //{
-		    		//@Override
-		    		//public void run()
-		    		//{
-		    			//need this to be null, .class file
-		    			//Intent i = new Intent(null, SubActivity.class);
-		    			//startActivity(i);
-		    		//}
-		    	  //});
-		      }
-
-		      @Override
-		      public void onError(CollabrifyException e)
-		      {
-		    	  Log.e("Tag", "error", e);
-		      }
-
-		      @Override
-		      public void onSessionJoined(long maxOrderId, long baseFileSize)
-		      {
-		    	  //no idea what we need here
-		      }
+					Log.i("Tag", "No session available");
+					return;
+						}
+			}
+	
+			@Override
+			public void onSessionCreated(long id)
+			{
+			 	//switch and start the intent
+			 	Log.i("Tag", "Session created: " + id);
+			 	sessionID = id;
+			 	runOnUiThread(new Runnable()
+			 	{
+			 		@Override
+			 		public void run()
+			 		{
+			 			//need this to be null, .class file
+			 			Intent i = new Intent(null, SubActivity.class);
+			 			startActivity(i);
+			 		}
+			 	});
+			}
+	
+			@Override
+			public void onError(CollabrifyException e)
+			{
+			 	Log.e("Tag", "error", e);
+			}
+	
+			@Override
+			public void onSessionJoined(long maxOrderId, long baseFileSize)
+			{
+			 		//no idea what we need here
+			}
 		};
 		
 		
@@ -131,7 +115,7 @@ public class MainActivity extends Activity {
 		
 		
 		tags.add("Default");
-		Log.i("Tag", "Added Default to tags");
+		Log.i("Tag", "Added to tags");
 	}
 
 	@Override
@@ -227,5 +211,4 @@ public class MainActivity extends Activity {
 			return super.onOptionsItemSelected(item);
 		}
 	}
-
 }
