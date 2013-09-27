@@ -19,10 +19,10 @@ import android.view.MenuItem;
 public class SubActivity extends Activity
 {
 	public CollabrifyClient myClient;
-	boolean createSessionVis = true;
-	boolean endSessionVis = false;
-	boolean joinSessionVis = true;
-	boolean leaveSessionVis = false;
+	boolean createSessionVis = false;
+	boolean endSessionVis = true;
+	boolean joinSessionVis = false;
+	boolean leaveSessionVis = true;
 	private long sessionID;
 	private String sessionName;
 	private CollabrifyListener collabrify;
@@ -32,16 +32,7 @@ public class SubActivity extends Activity
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		//huh?
-		/*
-		try{
-			CollabrifyAdapterExtended adapter = new CollabrifyAdapterExtended();
-			myClient = new CollabrifyClient(this, "johnrabi@umich.edu", "user display name", "441fall2013@umich.edu", "XY3721425NoScOpE", false, adapter );
-		}
-		catch (CollabrifyException e){
-			Log.e("Error", "Error creating client", e);
-		}
-		*/
+
 		collabrify = new CollabrifyAdapter() {
 			@Override
 			public void onDisconnect()
@@ -178,6 +169,15 @@ public class SubActivity extends Activity
 			joinSessionVis = true;
 			leaveSessionVis = false;
 			this.invalidateOptionsMenu();
+			try{
+				if(myClient.inSession())
+					myClient.leaveSession(true);
+				else
+					Log.d("Test", "Why am I even here?");
+			}
+			catch ( CollabrifyException e ){
+				Log.e("Error", "Error ending session");
+			}
 			return true;
 		case R.id.action_joinSession:
 			Log.d("Join", "Join session");

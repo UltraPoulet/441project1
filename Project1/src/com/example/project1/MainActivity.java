@@ -96,16 +96,16 @@ public class MainActivity extends Activity {
 		    	  //switch and start the intent
 		    	  Log.i("Tag", "Session created: " + id);
 		    	  sessionID = id;
-		    	  //runOnUiThread(new Runnable()
-		    	  //{
-		    		//@Override
-		    		//public void run()
-		    		//{
+		    	  runOnUiThread(new Runnable()
+		    	  {
+		    		@Override
+		    		public void run()
+		    		{
 		    			//need this to be null, .class file
-		    			//Intent i = new Intent(null, SubActivity.class);
-		    			//startActivity(i);
-		    		//}
-		    	  //});
+		    			Intent i = new Intent(getBaseContext(), SubActivity.class);
+		    			startActivity(i);
+		    		}
+		    	  });
 		      }
 
 		      @Override
