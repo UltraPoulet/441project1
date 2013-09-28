@@ -97,6 +97,7 @@ public class SubActivity extends Activity
 									int appendPos = cursorLocs.get(eventAdd.getPartID()).intValue();
 									etm.isAction = true;
 									etm.getText().insert(appendPos, eventAdd.getChar());
+									etm.isAction = false;
 								}
 								catch (Exception e) {e.printStackTrace();}
 							}
@@ -105,14 +106,22 @@ public class SubActivity extends Activity
 					}
 					else if(eventType.contains("Delete"))
 					{
-						try {
-							EventDel eventDel = EventDel.parseFrom(data);
-							int appendPos = cursorLocs.get(eventDel.getPartID()).intValue() - 1;
-							etm.isAction = true;
-							//I can't find another way to do this besides just replacing the entire string
-							etm.setText(etm.getText().delete(appendPos, appendPos));
-						}
-						catch (Exception e) {e.printStackTrace();}
+						runOnUiThread(new Runnable()
+						{
+							@Override
+							public void run()
+							{
+								try {
+									EventDel eventDel = EventDel.parseFrom(data);
+									int appendPos = cursorLocs.get(eventDel.getPartID()).intValue();
+									etm.isAction = true;
+									//I can't find another way to do this besides just replacing the entire string
+									etm.getText().delete(appendPos, appendPos+1);
+									etm.isAction = false;
+								}
+								catch (Exception e) {e.printStackTrace();}
+							}
+						});
 					}
 					else if(eventType.contains("Join"))
 					{
