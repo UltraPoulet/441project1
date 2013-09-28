@@ -28,6 +28,7 @@ public class SubActivity extends Activity
 	private String sessionName;
 	private CollabrifyListener collabrify;
 	private ArrayList<String> tags = new ArrayList<String>();
+	private String text = "";
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +46,7 @@ public class SubActivity extends Activity
 					public void run()
 					{
 						Intent i = new Intent(getBaseContext(), MainActivity.class);
+						i.putExtra("text", text);
 						startActivity(i);
 					}
 				});
@@ -95,6 +97,8 @@ public class SubActivity extends Activity
 		}
 		tags.add("Default");
 		
+		text = getIntent().getStringExtra("text");
+		
 		String vars = getIntent().getStringExtra("name");
 		if(vars != null)
 		{
@@ -123,6 +127,7 @@ public class SubActivity extends Activity
 			else {
 				Log.e("Tag", "Invalid sessionID");
 				Intent i = new Intent(getBaseContext(), MainActivity.class);
+				i.putExtra("text", text);
 				startActivity(i);
 			}
 		}

@@ -14,6 +14,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="@string/edit_message"
-        android:inputType="textMultiLine" />
+        android:inputType="textMultiLine|textVisiblePassword"
+        android:maxLength="10" />
 
 </LinearLayout>

@@ -32,11 +32,13 @@ public class MainActivity extends Activity {
 	private String sessionName;
 	private CollabrifyListener collabrify;
 	private ArrayList<String> tags = new ArrayList<String>();
+	private String text = "";
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		text = this.getIntent().getStringExtra("text");
 		collabrify = new CollabrifyAdapter() {
 			@Override
 			public void onDisconnect()
@@ -68,6 +70,7 @@ public class MainActivity extends Activity {
 						  sessionName = sessionList.get(which).name();
 						  Intent i = new Intent(getBaseContext(), SubActivity.class);
 						  i.putExtra("id", sessionID);
+						  i.putExtra("text", text);
 						  startActivity(i);
 						}
 						catch( Exception e ){Log.e("Tag", "error", e);}
@@ -115,6 +118,9 @@ public class MainActivity extends Activity {
 		menu.getItem(4).setVisible(endSessionVis);
 		menu.getItem(5).setVisible(joinSessionVis);
 		menu.getItem(6).setVisible(leaveSessionVis);
+
+		if(text != null)
+			((EditTextModified)this.getCurrentFocus()).setText(text);
 		
 		return true;
 	}
@@ -122,6 +128,7 @@ public class MainActivity extends Activity {
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item){
 		EditTextModified etm = (EditTextModified)this.getCurrentFocus();
+		text = etm.getText().toString();
 		switch(item.getItemId()){
 		case R.id.action_settings:
 			return true;
@@ -152,7 +159,7 @@ public class MainActivity extends Activity {
 					//need this to be null, .class file
 					Intent i = new Intent(getBaseContext(), SubActivity.class);
 					i.putExtra("name", sessionName);
-					System.out.println(i.getExtras().getString("name"));
+					i.putExtra("text", text);
 					startActivity(i);
 				}
 			});

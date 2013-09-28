@@ -3,6 +3,7 @@ package com.example.project1;
 import com.example.project1.History.Type;
 
 import android.content.Context;
+import android.text.InputType;
 import android.util.AttributeSet;
 import android.widget.EditText;
 import android.widget.Toast;
