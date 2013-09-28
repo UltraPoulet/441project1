@@ -1,15 +1,19 @@
 package com.example.project1;
 
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.Dictionary;
+import java.util.Hashtable;
+
+import com.example.project1.EventProtocols.EventAdd;
+import com.example.project1.EventProtocols.EventDel;
+import com.example.project1.EventProtocols.EventJoin;
+import com.example.project1.EventProtocols.EventLeave;
+import com.example.project1.EventProtocols.EventMove;
 
 import edu.umich.imlc.collabrify.client.CollabrifyAdapter;
 import edu.umich.imlc.collabrify.client.CollabrifyClient;
 import edu.umich.imlc.collabrify.client.CollabrifyListener;
-import edu.umich.imlc.collabrify.client.CollabrifySession;
 import edu.umich.imlc.collabrify.client.exceptions.CollabrifyException;
-import edu.umich.imlc.collabrify.client.exceptions.ConnectException;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
@@ -29,6 +33,21 @@ public class SubActivity extends Activity
 	private CollabrifyListener collabrify;
 	private ArrayList<String> tags = new ArrayList<String>();
 	private String text = "";
+	private String Tag = "SubActivity";
+	private long participantID = -1;
+	private Dictionary<Long, Long> cursorLocs = new Hashtable<Long, Long>();
+	EditTextModified etm;
+	
+	@Override
+	public void onWindowFocusChanged(boolean hasFocus) {
+		if(this.getCurrentFocus() instanceof EditTextModified)
+		{
+			etm = (EditTextModified)this.getCurrentFocus();
+			Log.i(Tag, "hey, we worked!");
+			etm.myclient = myClient;
+		}
+		super.onWindowFocusChanged(hasFocus);
+	}
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -39,7 +58,7 @@ public class SubActivity extends Activity
 			@Override
 			public void onDisconnect()
 			{
-				Log.i("Tag", "Disconnected from session.");
+				Log.i(Tag, "Disconnected from session.");
 				runOnUiThread(new Runnable()
 				{
 					@Override
@@ -50,43 +69,105 @@ public class SubActivity extends Activity
 						startActivity(i);
 					}
 				});
+				broadcast("Leave", "");
+				Log.i(Tag, "Broadcasted Leave");
 			}
 			
 			@Override
 			public void onReceiveEvent(final long orderId, int subId, String eventType, final byte[] data)
 			{
+				Log.d(Tag, "Received evet " + eventType);
 				//handle the incoming event
-			}
-			
-			@Override
-			public void onReceiveSessionList(final List<CollabrifySession> sessionList)
-			{
-					if( sessionList.isEmpty() )
+				try {
+					if (eventType.contains("Move"))
 					{
-					Log.i("Tag", "No session available");
-					return;
+						EventMove eventMove = EventMove.parseFrom(data);
+						cursorLocs.put(eventMove.getPartID(), eventMove.getNewLoc());
+					}
+					else if(eventType.contains("Add"))
+					{
+						runOnUiThread(new Runnable()
+						{
+							@Override
+							public void run()
+							{
+								try {
+									EventAdd eventAdd = EventAdd.parseFrom(data);
+									Log.d(Tag, cursorLocs.get(eventAdd.getPartID()).toString());
+									int appendPos = cursorLocs.get(eventAdd.getPartID()).intValue();
+									etm.isAction = true;
+									etm.getText().insert(appendPos, eventAdd.getChar());
+								}
+								catch (Exception e) {e.printStackTrace();}
+							}
+						});
+						
+					}
+					else if(eventType.contains("Delete"))
+					{
+						try {
+							EventDel eventDel = EventDel.parseFrom(data);
+							int appendPos = cursorLocs.get(eventDel.getPartID()).intValue() - 1;
+							etm.isAction = true;
+							//I can't find another way to do this besides just replacing the entire string
+							etm.setText(etm.getText().delete(appendPos, appendPos));
 						}
-			}
-	
-			@Override
-			public void onSessionCreated(long id)
-			{
-			 	//switch and start the intent
-			 	Log.i("Tag", "Session created: " + id);
-			 	sessionID = id;
+						catch (Exception e) {e.printStackTrace();}
+					}
+					else if(eventType.contains("Join"))
+					{
+						EventJoin eventJoin = EventJoin.parseFrom(data);
+						//start everyone at 0
+						cursorLocs.put(eventJoin.getPartID(), (long) 0);
+						Log.e(Tag, "Cursor Loc: " + eventJoin.getPartID() + " " + cursorLocs.get(eventJoin.getPartID()));
+					}
+					else if(eventType.contains("Leave"))
+					{
+						EventLeave eventLeave = EventLeave.parseFrom(data);
+						cursorLocs.remove(eventLeave.getPartID());
+					}
+					else
+						Log.d(Tag, "Invalid event Type: " + eventType);
+				}
+				catch(Exception e) {
+					e.printStackTrace();
+				}
 			}
 	
 			@Override
 			public void onError(CollabrifyException e)
 			{
-			 	Log.e("Tag", "error", e);
+			 	Log.e(Tag, "error", e);
 			}
-	
+			
 			@Override
-			public void onSessionJoined(long maxOrderId, long baseFileSize)
-			{
-			 		//no idea what we need here
+			public void onSessionJoined(long maxOrderId, long baseFileSize) {
+				try {
+					sessionID = myClient.currentSessionId();
+					participantID = myClient.currentSessionParticipantId();
+					broadcast("Join", "");
+					Log.i(Tag, "Broadcasted Join");
+				}
+				catch(Exception e) { 
+					e.printStackTrace();
+				}
+				super.onSessionJoined(maxOrderId, baseFileSize);
 			}
+			@Override
+			public void onSessionCreated(long id) {
+				super.onSessionCreated(id);
+				Log.d(Tag, "Session created: " + id);
+				try {
+					participantID = myClient.currentSessionParticipantId();
+					broadcast("Join", "");
+					Log.i(Tag, "Broadcasted Join");
+					sessionID = id;
+				}
+				catch(Exception e) {
+					e.printStackTrace();
+				}
+			}
+			
 		};
 		
 		try{
@@ -100,15 +181,14 @@ public class SubActivity extends Activity
 		text = getIntent().getStringExtra("text");
 		
 		String vars = getIntent().getStringExtra("name");
+		//System.out.println(vars);
 		if(vars != null)
 		{
 			sessionName = vars;
 			try {
 				myClient.createSession(sessionName, tags, null, 0);
-				sessionID = myClient.currentSessionId();
-				Log.i("Tag", "In session: " + sessionID);
 			} catch (Exception e) {
-				
+				e.printStackTrace();
 			}
 		}
 		else {
@@ -116,16 +196,18 @@ public class SubActivity extends Activity
 			long id = getIntent().getLongExtra("id", -1);
 			if(id != -1) {
 				sessionID = id;
-				Log.i("Tag", "Session Joined " + sessionID);
+				Log.i(Tag, "Session Joined " + sessionID);
 				try {
 					myClient.joinSession(sessionID, null);
+					endSessionVis = false;
+					invalidateOptionsMenu();
 				} 
 				catch (Exception e1) {
 					e1.printStackTrace();
 				}
 			}
 			else {
-				Log.e("Tag", "Invalid sessionID");
+				Log.e(Tag, "Invalid sessionID");
 				Intent i = new Intent(getBaseContext(), MainActivity.class);
 				i.putExtra("text", text);
 				startActivity(i);
@@ -149,7 +231,6 @@ public class SubActivity extends Activity
 	
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item){
-		EditTextModified etm = (EditTextModified)this.getCurrentFocus();
 		switch(item.getItemId()){
 		case R.id.action_settings:
 			return true;
@@ -195,6 +276,28 @@ public class SubActivity extends Activity
 			return true;
 		default:
 			return super.onOptionsItemSelected(item);
+		}
+	}
+	
+	//if not an add, just put an empty string
+	public void broadcast(String type, String added)
+	{
+		Log.d(Tag, "Entered broadcast");
+		if(myClient != null && myClient.inSession())
+		{
+			Log.d(Tag, "Client in session");
+			try
+			{
+				if (type == "Join") {
+					EventJoin eventJoin = EventJoin.newBuilder().setPartID(participantID).build();
+					myClient.broadcast(eventJoin.toByteArray(), type);
+				}
+				else if (type == "Leave") {
+					EventLeave eventLeave = EventLeave.newBuilder().setPartID(participantID).build();
+					myClient.broadcast(eventLeave.toByteArray(), type);
+				}
+			}
+			catch( CollabrifyException e ){Log.e(Tag, "error", e);}    	
 		}
 	}
 }

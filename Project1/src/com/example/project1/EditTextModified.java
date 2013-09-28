@@ -1,10 +1,18 @@
 package com.example.project1;
 
+import com.example.project1.EventProtocols.EventAdd;
+import com.example.project1.EventProtocols.EventDel;
+import com.example.project1.EventProtocols.EventJoin;
+import com.example.project1.EventProtocols.EventLeave;
+import com.example.project1.EventProtocols.EventMove;
 import com.example.project1.History.Type;
 
+import edu.umich.imlc.collabrify.client.CollabrifyClient;
+import edu.umich.imlc.collabrify.client.exceptions.CollabrifyException;
+
 import android.content.Context;
-import android.text.InputType;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -15,7 +23,8 @@ public class EditTextModified extends EditText{
 	private String prev;
 	private int lastPos;
 	private boolean notBoot;
-	private boolean isUndoRedoAction;
+	public boolean isAction;
+	public CollabrifyClient myclient = null;
 	
 	public EditTextModified(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
@@ -35,9 +44,10 @@ public class EditTextModified extends EditText{
 	@Override
 	protected void onSelectionChanged(int selStart, int selEnd){
 		if(changedText || !notBoot){
+			Log.d("EditText", "blahblahblah");
 			changedText = false;
 		}
-		else if(isUndoRedoAction)
+		else if(isAction)
 		{
 			Toast.makeText(getContext(), history.strMerge(), Toast.LENGTH_SHORT).show();
 		}
@@ -45,7 +55,10 @@ public class EditTextModified extends EditText{
 			Toast.makeText(getContext(), "selStart is " + selStart + "selEnd is " + selEnd, Toast.LENGTH_SHORT).show();
 			history.clearRedo();
 			if(selStart == selEnd)
+			{
 				history.add(true, "", lastPos, Type.CURSOR_MOVE);
+				broadcast("Move", "");
+			}
 			//else
 			//	history.add(true, Integer.toString(selStart) + "," + Integer.toString(selEnd), Type.SELECTION);
 			Toast.makeText(getContext(), history.strMerge(), Toast.LENGTH_SHORT).show();
@@ -61,16 +74,32 @@ public class EditTextModified extends EditText{
 			notBoot = true;
 			return;
 		}
-		if(!isUndoRedoAction)
+		if(!isAction)
 		{
+			Log.d("Log", "Before lengthBefore < lengthAfter");
 			if(lengthBefore < lengthAfter){
-				Toast.makeText(getContext(), "Added: " + text.subSequence(start, start + lengthAfter), Toast.LENGTH_SHORT).show();
+				//Toast.makeText(getContext(), "Added: " + text.subSequence(start, start + lengthAfter), Toast.LENGTH_SHORT).show();
 				history.add(true, text.subSequence(start, start + lengthAfter).toString(), start, Type.CHAR_ADD);
+				try {
+					broadcast("Add", text.subSequence(start, start + lengthAfter).toString());
+					Log.i("Tag", "Hey, we broadcasted an add");
+				}
+				catch(Exception e) {
+					e.printStackTrace();
+					//non issue, we're in main
+				}
 			}
-			else{
+			else if (lengthBefore > lengthAfter){
 				String temp = prev.substring(start, start + (lengthBefore - lengthAfter));
 				Toast.makeText(getContext(), "Removed " + Integer.toString(lengthBefore - lengthAfter) + " chars " + temp + " at position: " + start, Toast.LENGTH_SHORT).show();
 				history.add(true, temp, start, Type.CHAR_DELETE);
+				try {
+					broadcast("Delete", temp);
+					Log.i("Tag", "Hey, we broadcasted a delete");
+				}
+				catch(Exception e) {
+					//non issue, we're in main
+				}
 			}
 			history.clearRedo();
 		}
@@ -79,25 +108,10 @@ public class EditTextModified extends EditText{
 		changedText = true;
 	}
 	
-	/*
-	//Volume key shortcut
-	@Override
-	public boolean onKeyDown(int keycode, KeyEvent event)
+	public int getCursorLoc()
 	{
-		if(keycode == KeyEvent.KEYCODE_VOLUME_DOWN)
-		{
-			UndoRedoHandler(false);
-			return true;
-		}
-		else if(keycode == KeyEvent.KEYCODE_VOLUME_UP)
-		{
-			UndoRedoHandler(true);
-			return true;
-		}
-		else
-			return super.onKeyDown(keycode, event);
+		return lastPos;
 	}
-	*/
 	
 	public void UndoRedoHandler(boolean isUndo)
 	{
@@ -117,7 +131,7 @@ public class EditTextModified extends EditText{
 		//we need to exclude a cursor move, since the value is actually the previous location
 		if(next.third != Type.CURSOR_MOVE)
 			history.add(isUndo, next);
-		isUndoRedoAction = true;
+		isAction = true;
 		switch(next.third)
 		{
 			//functional
@@ -153,6 +167,29 @@ public class EditTextModified extends EditText{
 			default:
 				break;
 		}
-		isUndoRedoAction = false;
+		isAction = false;
 	}
+	
+	public void broadcast(String type, String added)
+	{
+		if(myclient != null && myclient.inSession()){
+			try
+			{
+				long participantID = myclient.currentSessionParticipantId();
+				if (type == "Move") {
+					EventMove eventMove = EventMove.newBuilder().setPartID(participantID).setNewLoc(getCursorLoc()).build();
+					myclient.broadcast(eventMove.toByteArray(), type);
+				}
+				else if (type == "Add") {
+					EventAdd eventAdd = EventAdd.newBuilder().setPartID(participantID).setChar(added).build();
+					myclient.broadcast(eventAdd.toByteArray(), type);
+				}
+				else if (type == "Delete") {
+					EventDel eventDel = EventDel.newBuilder().setPartID(participantID).build();
+					myclient.broadcast(eventDel.toByteArray(), type);
+				}
+			}
+			catch( CollabrifyException e ){Log.e("Tag", "error", e);}   
+		}
+    }
 }

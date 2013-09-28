@@ -32,7 +32,8 @@ public class MainActivity extends Activity {
 	private String sessionName;
 	private CollabrifyListener collabrify;
 	private ArrayList<String> tags = new ArrayList<String>();
-	private String text = "";
+	private String Tag = "MainActivity";
+	private String text = null;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -43,7 +44,7 @@ public class MainActivity extends Activity {
 			@Override
 			public void onDisconnect()
 			{
-				Log.i("Tag", "Disconnected from session.");
+				Log.i(Tag, "Disconnected from session.");
 			}
 
 			@Override
@@ -51,7 +52,7 @@ public class MainActivity extends Activity {
 		      {
 				if( sessionList.isEmpty() )
 				{
-				  Log.i("Tag", "No session available");
+				  Log.i(Tag, "No session available");
 				  return;
 				}
 				List<String> sessionNames = new ArrayList<String>();
@@ -73,7 +74,7 @@ public class MainActivity extends Activity {
 						  i.putExtra("text", text);
 						  startActivity(i);
 						}
-						catch( Exception e ){Log.e("Tag", "error", e);}
+						catch( Exception e ){Log.e(Tag, "error", e);}
 				      }
 				    }
 				);
@@ -92,7 +93,7 @@ public class MainActivity extends Activity {
 		      @Override
 		      public void onError(CollabrifyException e)
 		      {
-		    	  Log.e("Tag", "error", e);
+		    	  Log.e(Tag, "error", e);
 		      }
 
 		};
@@ -107,7 +108,7 @@ public class MainActivity extends Activity {
 		
 		
 		tags.add("Default");
-		Log.i("Tag", "Added Default to tags");
+		Log.i(Tag, "Added Default to tags");
 	}
 
 	@Override
@@ -120,7 +121,10 @@ public class MainActivity extends Activity {
 		menu.getItem(6).setVisible(leaveSessionVis);
 
 		if(text != null)
+		{
+			System.out.println(text);
 			((EditTextModified)this.getCurrentFocus()).setText(text);
+		}
 		
 		return true;
 	}
@@ -140,16 +144,11 @@ public class MainActivity extends Activity {
 			return true;
 		case R.id.action_createSession:
 			Log.d("Create", "Create Session");
-			createSessionVis = false;
-			endSessionVis = true;
-			joinSessionVis = false;
-			leaveSessionVis = false;
-			this.invalidateOptionsMenu();
 			
 			//This is trying to create a session
 			Random rand = new Random();
 			sessionName = "Rabideau" + rand.nextInt(Integer.MAX_VALUE);
-			Log.d("Tag", "Session name is " + sessionName);
+			Log.d(Tag, "Session name is " + sessionName);
 			
 			runOnUiThread(new Runnable()
 			{
@@ -167,14 +166,9 @@ public class MainActivity extends Activity {
 			return true;
 		case R.id.action_joinSession:
 			Log.d("Join", "Join session");
-			createSessionVis = false;
-			endSessionVis = false;
-			joinSessionVis = false;
-			leaveSessionVis = true;
-			this.invalidateOptionsMenu();
 			//snag and display available sessions
 			try { myClient.requestSessionList(tags); }
-			catch (Exception e) { Log.e("Tag", "error", e); }
+			catch (Exception e) { Log.e(Tag, "error", e); }
 			return true;
 		default:
 			return super.onOptionsItemSelected(item);
