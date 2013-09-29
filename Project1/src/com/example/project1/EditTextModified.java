@@ -26,6 +26,8 @@ public class EditTextModified extends EditText{
 	public boolean isAction;
 	public CollabrifyClient myclient = null;
 	
+	public boolean broadcastJoin;
+	
 	public EditTextModified(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
 		setLongClickable(false);
@@ -176,6 +178,11 @@ public class EditTextModified extends EditText{
 			try
 			{
 				long participantID = myclient.currentSessionParticipantId();
+				if(!broadcastJoin){
+					EventJoin eventJoin = EventJoin.newBuilder().setPartID(participantID).build();
+					myclient.broadcast(eventJoin.toByteArray(), "Join");
+					broadcastJoin = true;
+				}
 				if (type == "Move") {
 					EventMove eventMove = EventMove.newBuilder().setPartID(participantID).setNewLoc(lastPos).build();
 					myclient.broadcast(eventMove.toByteArray(), type);

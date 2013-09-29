@@ -39,6 +39,8 @@ public class SubActivity extends Activity
 	private Dictionary<Long, Long> cursorLocs = new Hashtable<Long, Long>();
 	EditTextModified etm;
 	
+	boolean broadcastJoin = false;
+	
 	@Override
 	public void onWindowFocusChanged(boolean hasFocus) {
 		if(this.getCurrentFocus() instanceof EditTextModified)
@@ -46,6 +48,8 @@ public class SubActivity extends Activity
 			etm = (EditTextModified)this.getCurrentFocus();
 			Log.i(Tag, "hey, we worked!");
 			etm.myclient = myClient;
+			etm.broadcastJoin = broadcastJoin;
+			broadcastJoin = true;
 		}
 		super.onWindowFocusChanged(hasFocus);
 	}
@@ -162,6 +166,7 @@ public class SubActivity extends Activity
 					participantID = myClient.currentSessionParticipantId();
 					broadcast("Join", "");
 					Log.i(Tag, "Broadcasted Join");
+					broadcastJoin = true;
 				}
 				catch(Exception e) { 
 					e.printStackTrace();

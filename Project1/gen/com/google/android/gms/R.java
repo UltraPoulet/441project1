@@ -4,7 +4,7 @@
  * aapt tool from the resource data it found.  It
  * should not be modified by hand.
  */
-package edu.umich.imlc.collabrify.client;
+package com.google.android.gms;
 
 public final class R {
 	public static final class attr {
@@ -62,8 +62,6 @@ public final class R {
 		public static final int common_signin_btn_text_normal_light = 0x7f020015;
 		public static final int common_signin_btn_text_pressed_dark = 0x7f020016;
 		public static final int common_signin_btn_text_pressed_light = 0x7f020017;
-		public static final int ic_action_search = 0x7f020018;
-		public static final int ic_launcher = 0x7f020019;
 	}
 	public static final class id {
 		public static final int hybrid = 0x7f050004;
@@ -73,7 +71,6 @@ public final class R {
 		public static final int terrain = 0x7f050003;
 	}
 	public static final class string {
-		public static final int app_name = 0x7f060015;
 		public static final int auth_client_needs_enabling_title = 0x7f060010;
 		public static final int auth_client_needs_installation_title = 0x7f060011;
 		public static final int auth_client_needs_update_title = 0x7f060012;
@@ -95,14 +92,6 @@ public final class R {
 		public static final int common_google_play_services_update_title = 0x7f060007;
 		public static final int common_signin_button_text = 0x7f06000d;
 		public static final int common_signin_button_text_long = 0x7f06000e;
-		public static final int hello_world = 0x7f060016;
-		public static final int menu_settings = 0x7f060017;
-		public static final int title_activity_main = 0x7f060018;
-		public static final int url = 0x7f060019;
-	}
-	public static final class style {
-		public static final int AppBaseTheme = 0x7f070000;
-		public static final int AppTheme = 0x7f070001;
 	}
 	public static final class styleable {
 		public static final int[] MapAttrs = { 0x7f010000, 0x7f010001, 0x7f010002, 0x7f010003, 0x7f010004, 0x7f010005, 0x7f010006, 0x7f010007, 0x7f010008, 0x7f010009, 0x7f01000a, 0x7f01000b, 0x7f01000c, 0x7f01000d };
