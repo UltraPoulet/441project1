@@ -75,25 +75,25 @@ public class SubActivity extends Activity
 			}
 			
 			@Override
-			public void onReceiveEvent(final long orderId, int subId, String eventType, final byte[] data)
+			public void onReceiveEvent(final long orderId, int subId, final String eventType, final byte[] data)
 			{
-				Log.d(Tag, "Received event " + eventType);
-				myClient.pauseEvents();
-				//handle the incoming event
-				try {
-					if (eventType.contains("Move"))
+				runOnUiThread(new Runnable()
+				{
+					@Override
+					public void run()
 					{
-						EventMove eventMove = EventMove.parseFrom(data);
-						System.out.println(eventMove.getPartID() + " " + eventMove.getNewLoc());
-						cursorLocs.put(eventMove.getPartID(), eventMove.getNewLoc());
-						//Toast.makeText(getBaseContext(), eventType + " " + eventMove.getNewLoc(), //Toast.LENGTH_SHORT).show();
-					}
-					else if(eventType.contains("Add"))
-					{
-						runOnUiThread(new Runnable()
-						{
-							@Override
-							public void run()
+						Log.d(Tag, "Received event " + eventType);
+						myClient.pauseEvents();
+						//handle the incoming event
+						try {
+							if (eventType.contains("Move"))
+							{
+								EventMove eventMove = EventMove.parseFrom(data);
+								System.out.println(eventMove.getPartID() + " " + eventMove.getNewLoc());
+								cursorLocs.put(eventMove.getPartID(), eventMove.getNewLoc());
+								//Toast.makeText(getBaseContext(), eventType + " " + eventMove.getNewLoc(), //Toast.LENGTH_SHORT).show();
+							}
+							else if(eventType.contains("Add"))
 							{
 								try {
 									EventAdd eventAdd = EventAdd.parseFrom(data);
@@ -109,15 +109,7 @@ public class SubActivity extends Activity
 								}
 								catch (Exception e) {e.printStackTrace();}
 							}
-						});
-						
-					}
-					else if(eventType.contains("Delete"))
-					{
-						runOnUiThread(new Runnable()
-						{
-							@Override
-							public void run()
+							else if(eventType.contains("Delete"))
 							{
 								try {
 									EventDel eventDel = EventDel.parseFrom(data);
@@ -132,29 +124,29 @@ public class SubActivity extends Activity
 								}
 								catch (Exception e) {e.printStackTrace();}
 							}
-						});
+							else if(eventType.contains("Join"))
+							{
+								EventJoin eventJoin = EventJoin.parseFrom(data);
+								//start everyone at 0
+								cursorLocs.put(eventJoin.getPartID(), (long) 0);
+								Log.e(Tag, "Cursor Loc: " + eventJoin.getPartID() + " " + cursorLocs.get(eventJoin.getPartID()));
+								//Toast.makeText(getBaseContext(), eventType, //Toast.LENGTH_SHORT).show();
+							}
+							else if(eventType.contains("Leave"))
+							{
+								EventLeave eventLeave = EventLeave.parseFrom(data);
+								cursorLocs.remove(eventLeave.getPartID());
+								//Toast.makeText(getBaseContext(), eventType, //Toast.LENGTH_SHORT).show();
+							}
+							else
+								Log.d(Tag, "Invalid event Type: " + eventType);
+						}
+						catch(Exception e) {
+							e.printStackTrace();
+						}
+						myClient.resumeEvents();
 					}
-					else if(eventType.contains("Join"))
-					{
-						EventJoin eventJoin = EventJoin.parseFrom(data);
-						//start everyone at 0
-						cursorLocs.put(eventJoin.getPartID(), (long) 0);
-						Log.e(Tag, "Cursor Loc: " + eventJoin.getPartID() + " " + cursorLocs.get(eventJoin.getPartID()));
-						//Toast.makeText(getBaseContext(), eventType, //Toast.LENGTH_SHORT).show();
-					}
-					else if(eventType.contains("Leave"))
-					{
-						EventLeave eventLeave = EventLeave.parseFrom(data);
-						cursorLocs.remove(eventLeave.getPartID());
-						//Toast.makeText(getBaseContext(), eventType, //Toast.LENGTH_SHORT).show();
-					}
-					else
-						Log.d(Tag, "Invalid event Type: " + eventType);
-				}
-				catch(Exception e) {
-					e.printStackTrace();
-				}
-				myClient.resumeEvents();
+				});
 			}
 	
 			@Override
