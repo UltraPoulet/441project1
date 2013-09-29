@@ -53,19 +53,8 @@ public class EditTextModified extends EditText{
 		{
 			//Toast.makeText(getContext(), history.strMerge(), //Toast.LENGTH_SHORT).show();
 		}
-		else{
-			//Toast.makeText(getContext(), "selStart is " + selStart + "selEnd is " + selEnd, //Toast.LENGTH_SHORT).show();
-			history.clearRedo();
-			if(selStart == selEnd)
-			{
-				history.add(true, "", lastPos, Type.CURSOR_MOVE);
-			}
-			//else
-			//	history.add(true, Integer.toString(selStart) + "," + Integer.toString(selEnd), Type.SELECTION);
-			//Toast.makeText(getContext(), history.strMerge(), //Toast.LENGTH_SHORT).show();
-		}
 		lastPos = selStart;
-		broadcast("Move", "");
+		broadcast("Move", "", lastPos);
 	}
 	
 	@Override
@@ -81,9 +70,10 @@ public class EditTextModified extends EditText{
 			Log.d("Log", "Before lengthBefore < lengthAfter");
 			if(lengthBefore < lengthAfter){
 				////Toast.makeText(getContext(), "Added: " + text.subSequence(start, start + lengthAfter), //Toast.LENGTH_SHORT).show();
+				history.clearRedo();
 				history.add(true, text.subSequence(start, start + lengthAfter).toString(), start, Type.CHAR_ADD);
 				try {
-					broadcast("Add", text.subSequence(start, start + lengthAfter).toString());
+					broadcast("Add", text.subSequence(start, start + lengthAfter).toString(), 0);
 					Log.i("Tag", "Hey, we broadcasted an add");
 				}
 				catch(Exception e) {
@@ -96,7 +86,7 @@ public class EditTextModified extends EditText{
 				//Toast.makeText(getContext(), "Removed " + Integer.toString(lengthBefore - lengthAfter) + " chars " + temp + " at position: " + start, //Toast.LENGTH_SHORT).show();
 				history.add(true, temp, start, Type.CHAR_DELETE);
 				try {
-					broadcast("Delete", temp);
+					broadcast("Delete", temp, 0);
 					Log.i("Tag", "Hey, we broadcasted a delete");
 				}
 				catch(Exception e) {
@@ -148,10 +138,16 @@ public class EditTextModified extends EditText{
 			case CHAR_ADD:
 				if(isUndo)
 				{
+					broadcast("Move","", next.second+1);
+					broadcast("Delete","",0);
+					broadcast("Move","",lastPos);
 					this.getText().delete(next.second, next.second + next.first.length());
 				}
 				else
 				{
+					broadcast("Move","",next.second);
+					broadcast("Add",next.first,0);
+					broadcast("Move","",lastPos);
 					this.getText().insert(next.second, next.first);
 				}
 				break;
@@ -159,10 +155,16 @@ public class EditTextModified extends EditText{
 			case CHAR_DELETE:
 				if(isUndo)
 				{
+					broadcast("Move","",next.second);
+					broadcast("Add",next.first,0);
+					broadcast("Move","",lastPos);
 					this.getText().insert(next.second, next.first);
 				}
 				else
 				{
+					broadcast("Move","", next.second);
+					broadcast("Delete","",0);
+					broadcast("Move","",lastPos);
 					this.getText().delete(next.second, next.second + next.first.length());
 				}
 				break;
@@ -172,7 +174,7 @@ public class EditTextModified extends EditText{
 		isAction = false;
 	}
 	
-	public void broadcast(String type, String added)
+	public void broadcast(String type, String added, int pos)
 	{
 		if(myclient != null && myclient.inSession()){
 			try
@@ -184,7 +186,7 @@ public class EditTextModified extends EditText{
 					broadcastJoin = true;
 				}
 				if (type == "Move") {
-					EventMove eventMove = EventMove.newBuilder().setPartID(participantID).setNewLoc(lastPos).build();
+					EventMove eventMove = EventMove.newBuilder().setPartID(participantID).setNewLoc(pos).build();
 					myclient.broadcast(eventMove.toByteArray(), type);
 				}
 				else if (type == "Add") {

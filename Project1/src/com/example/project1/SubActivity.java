@@ -188,6 +188,22 @@ public class SubActivity extends Activity
 				}
 			}
 			
+			@Override
+			public void onSessionEnd(long id){
+				super.onSessionEnd(id);
+				Log.i(Tag, "Disconnected from session.");
+				runOnUiThread(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						Intent i = new Intent(getBaseContext(), MainActivity.class);
+						i.putExtra("text", text);
+						startActivity(i);
+					}
+				});
+			}
+			
 		};
 		
 		try{
