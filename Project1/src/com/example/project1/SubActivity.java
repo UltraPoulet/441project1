@@ -57,7 +57,8 @@ public class SubActivity extends Activity
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_main);		
+		setContentView(R.layout.activity_main);
+		//this.setTitle("Testing");
 		
 		collabrify = new CollabrifyAdapter() {
 			@Override
@@ -167,6 +168,20 @@ public class SubActivity extends Activity
 					broadcast("Join", "");
 					Log.i(Tag, "Broadcasted Join");
 					broadcastJoin = true;
+					String sessionName = myClient.currentSessionName();
+					runOnUiThread(new Runnable(){
+						@Override
+						public void run() {
+							try {
+								String sessionName = myClient.currentSessionName();
+								setTitle("WeWrite " + sessionName);
+							} catch (CollabrifyException e) {
+								e.printStackTrace();
+							}
+						}
+						
+					});
+					Log.d(Tag,"It should have changed title");
 				}
 				catch(Exception e) { 
 					e.printStackTrace();
@@ -223,6 +238,7 @@ public class SubActivity extends Activity
 			sessionName = vars;
 			try {
 				myClient.createSession(sessionName, tags, null, 0);
+				this.setTitle("WeWrite " + sessionName);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -236,7 +252,8 @@ public class SubActivity extends Activity
 				try {
 					myClient.joinSession(sessionID, null);
 					endSessionVis = false;
-					invalidateOptionsMenu();
+					invalidateOptionsMenu();				
+					
 				} 
 				catch (Exception e1) {
 					e1.printStackTrace();
