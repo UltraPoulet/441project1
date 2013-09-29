@@ -49,10 +49,10 @@ public class EditTextModified extends EditText{
 		}
 		else if(isAction)
 		{
-			Toast.makeText(getContext(), history.strMerge(), Toast.LENGTH_SHORT).show();
+			//Toast.makeText(getContext(), history.strMerge(), //Toast.LENGTH_SHORT).show();
 		}
 		else{
-			Toast.makeText(getContext(), "selStart is " + selStart + "selEnd is " + selEnd, Toast.LENGTH_SHORT).show();
+			//Toast.makeText(getContext(), "selStart is " + selStart + "selEnd is " + selEnd, //Toast.LENGTH_SHORT).show();
 			history.clearRedo();
 			if(selStart == selEnd)
 			{
@@ -60,7 +60,7 @@ public class EditTextModified extends EditText{
 			}
 			//else
 			//	history.add(true, Integer.toString(selStart) + "," + Integer.toString(selEnd), Type.SELECTION);
-			Toast.makeText(getContext(), history.strMerge(), Toast.LENGTH_SHORT).show();
+			//Toast.makeText(getContext(), history.strMerge(), //Toast.LENGTH_SHORT).show();
 		}
 		lastPos = selStart;
 		broadcast("Move", "");
@@ -78,7 +78,7 @@ public class EditTextModified extends EditText{
 		{
 			Log.d("Log", "Before lengthBefore < lengthAfter");
 			if(lengthBefore < lengthAfter){
-				//Toast.makeText(getContext(), "Added: " + text.subSequence(start, start + lengthAfter), Toast.LENGTH_SHORT).show();
+				////Toast.makeText(getContext(), "Added: " + text.subSequence(start, start + lengthAfter), //Toast.LENGTH_SHORT).show();
 				history.add(true, text.subSequence(start, start + lengthAfter).toString(), start, Type.CHAR_ADD);
 				try {
 					broadcast("Add", text.subSequence(start, start + lengthAfter).toString());
@@ -91,7 +91,7 @@ public class EditTextModified extends EditText{
 			}
 			else if (lengthBefore > lengthAfter){
 				String temp = prev.substring(start, start + (lengthBefore - lengthAfter));
-				Toast.makeText(getContext(), "Removed " + Integer.toString(lengthBefore - lengthAfter) + " chars " + temp + " at position: " + start, Toast.LENGTH_SHORT).show();
+				//Toast.makeText(getContext(), "Removed " + Integer.toString(lengthBefore - lengthAfter) + " chars " + temp + " at position: " + start, //Toast.LENGTH_SHORT).show();
 				history.add(true, temp, start, Type.CHAR_DELETE);
 				try {
 					broadcast("Delete", temp);
@@ -103,7 +103,7 @@ public class EditTextModified extends EditText{
 			}
 			history.clearRedo();
 		}
-		Toast.makeText(getContext(), history.strMerge(), Toast.LENGTH_SHORT).show();
+		//Toast.makeText(getContext(), history.strMerge(), //Toast.LENGTH_SHORT).show();
 		prev = text.toString();
 		changedText = true;
 	}
