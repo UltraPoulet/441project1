@@ -16,6 +16,34 @@ public class History
 		redoHistory = new ArrayDeque<Tuple<String,Integer,Type>>();
 	}
 	
+	public void adjustIndexes(int pos, boolean isAdd)
+	{
+		Iterator<Tuple<String,Integer,Type>> iter = undoHistory.iterator();
+		while(iter.hasNext())
+		{
+			Tuple<String,Integer,Type> curr = iter.next();
+			if(isAdd)
+				if(curr.second >= pos)
+					curr.second++;
+			else
+				if(curr.second >= pos)
+					curr.second--;
+			System.out.println(curr.second);
+		}
+		iter = redoHistory.iterator();
+		while(iter.hasNext())
+		{
+			Tuple<String,Integer,Type> curr = iter.next();
+			if(isAdd)
+				if(curr.second >= pos)
+					curr.second++;
+			else
+				if(curr.second >= pos)
+					curr.second--;
+			System.out.println(curr.second);
+		}
+	}
+	
 	//used by EditTextModified
 	public void add(boolean isUndo, String data, int pos, Type type)
 	{

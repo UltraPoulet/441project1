@@ -76,12 +76,13 @@ public class SubActivity extends Activity
 			@Override
 			public void onReceiveEvent(final long orderId, int subId, String eventType, final byte[] data)
 			{
-				Log.d(Tag, "Received evet " + eventType);
+				Log.d(Tag, "Received event " + eventType);
 				//handle the incoming event
 				try {
 					if (eventType.contains("Move"))
 					{
 						EventMove eventMove = EventMove.parseFrom(data);
+						System.out.println(eventMove.getPartID() + " " + eventMove.getNewLoc());
 						cursorLocs.put(eventMove.getPartID(), eventMove.getNewLoc());
 					}
 					else if(eventType.contains("Add"))
@@ -93,10 +94,13 @@ public class SubActivity extends Activity
 							{
 								try {
 									EventAdd eventAdd = EventAdd.parseFrom(data);
-									Log.d(Tag, cursorLocs.get(eventAdd.getPartID()).toString());
+									Log.d(Tag, eventAdd.getPartID() + " " + cursorLocs.get(eventAdd.getPartID()).toString() + " " + eventAdd.getChar());
+									if(eventAdd.getPartID() == participantID)
+										return;
 									int appendPos = cursorLocs.get(eventAdd.getPartID()).intValue();
 									etm.isAction = true;
 									etm.getText().insert(appendPos, eventAdd.getChar());
+									etm.history.adjustIndexes(appendPos, true);
 									etm.isAction = false;
 								}
 								catch (Exception e) {e.printStackTrace();}
@@ -113,10 +117,12 @@ public class SubActivity extends Activity
 							{
 								try {
 									EventDel eventDel = EventDel.parseFrom(data);
+									if(eventDel.getPartID() == participantID)
+										return;
 									int appendPos = cursorLocs.get(eventDel.getPartID()).intValue();
 									etm.isAction = true;
-									//I can't find another way to do this besides just replacing the entire string
-									etm.getText().delete(appendPos, appendPos+1);
+									etm.getText().delete(appendPos-1, appendPos);
+									etm.history.adjustIndexes(appendPos, false);
 									etm.isAction = false;
 								}
 								catch (Exception e) {e.printStackTrace();}

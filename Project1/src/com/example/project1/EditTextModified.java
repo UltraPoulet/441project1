@@ -19,7 +19,7 @@ import android.widget.Toast;
 public class EditTextModified extends EditText{
 	
 	public boolean changedText = false;
-	private History history = new History();
+	public History history = new History();
 	private String prev;
 	private int lastPos;
 	private boolean notBoot;
@@ -57,13 +57,13 @@ public class EditTextModified extends EditText{
 			if(selStart == selEnd)
 			{
 				history.add(true, "", lastPos, Type.CURSOR_MOVE);
-				broadcast("Move", "");
 			}
 			//else
 			//	history.add(true, Integer.toString(selStart) + "," + Integer.toString(selEnd), Type.SELECTION);
 			Toast.makeText(getContext(), history.strMerge(), Toast.LENGTH_SHORT).show();
 		}
 		lastPos = selStart;
+		broadcast("Move", "");
 	}
 	
 	@Override
@@ -177,7 +177,7 @@ public class EditTextModified extends EditText{
 			{
 				long participantID = myclient.currentSessionParticipantId();
 				if (type == "Move") {
-					EventMove eventMove = EventMove.newBuilder().setPartID(participantID).setNewLoc(getCursorLoc()).build();
+					EventMove eventMove = EventMove.newBuilder().setPartID(participantID).setNewLoc(lastPos).build();
 					myclient.broadcast(eventMove.toByteArray(), type);
 				}
 				else if (type == "Add") {
