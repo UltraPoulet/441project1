@@ -27,16 +27,16 @@ public class History
 			curr = iter.next();
 			if(isAdd)
 				if(curr.second >= pos)
+				{
+					Log.i("History", "Adjusted item: " + curr.first + "," + curr.second + " to pos " + (curr.second + 1));
 					curr.second++;
+				}
 			else
 				if(curr.second >= pos)
+				{
+					Log.i("History", "Adjusted item: " + curr.first + "," + curr.second + " to pos " + (curr.second - 1));
 					curr.second--;
-		}
-		iter = undoHistory.iterator();
-		while(iter.hasNext())
-		{
-			curr = iter.next();
-			Log.i("History", "val: " + curr.first + "pos: " + curr.second);
+				}
 		}
 		iter = redoHistory.iterator();
 		while(iter.hasNext())
@@ -44,11 +44,16 @@ public class History
 			curr = iter.next();
 			if(isAdd)
 				if(curr.second >= pos)
+				{
+					Log.i("History", "Adjusted item: " + curr.first + "," + curr.second + " to pos " + (curr.second + 1));
 					curr.second++;
+				}
 			else
 				if(curr.second >= pos)
+				{
+					Log.i("History", "Adjusted item: " + curr.first + "," + curr.second + " to pos " + (curr.second - 1));
 					curr.second--;
-			System.out.println(curr.second);
+				}
 		}
 	}
 	

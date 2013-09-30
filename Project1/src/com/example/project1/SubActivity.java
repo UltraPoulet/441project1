@@ -10,6 +10,7 @@ import com.example.project1.EventProtocols.EventDel;
 import com.example.project1.EventProtocols.EventJoin;
 import com.example.project1.EventProtocols.EventLeave;
 import com.example.project1.EventProtocols.EventMove;
+import com.example.project1.History.Type;
 
 import edu.umich.imlc.collabrify.client.CollabrifyAdapter;
 import edu.umich.imlc.collabrify.client.CollabrifyClient;
@@ -134,11 +135,12 @@ public class SubActivity extends Activity
 							}
 							catch (Exception e) {e.printStackTrace();}
 						}
+						
 						//run through globals up to event
 						while(!globals.isEmpty())
 						{
-							Log.i(Tag, "Globals not empty yet!");
 							Tuple<byte[], String, Integer> elem = globals.pop();
+							Log.i(Tag, "Globals not empty yet! " + elem.second);
 							//the only events that modify elements are adds and deletes
 							//there are no owned adds/deletes in this array, it's all
 							//other people. Finding your first add/delete is the trigger to

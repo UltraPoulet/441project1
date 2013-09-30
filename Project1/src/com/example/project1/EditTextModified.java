@@ -204,16 +204,19 @@ public class EditTextModified extends EditText{
 				if (type == "Move") {
 					EventMove eventMove = EventMove.newBuilder().setPartID(participantID).setNewLoc(pos).build();
 					int sub = myclient.broadcast(eventMove.toByteArray(), type);
+					Log.i("Locals", "Added Move to locals");
 					locals.add(new Tuple<Integer, String, Integer>(sub, type, pos));
 				}
 				else if (type == "Add") {
 					EventAdd eventAdd = EventAdd.newBuilder().setPartID(participantID).setChar(added).build();
 					int sub = myclient.broadcast(eventAdd.toByteArray(), type);
+					Log.i("Locals", "Added Add to locals");
 					locals.add(new Tuple<Integer, String, Integer>(sub, type, pos));
 				}
 				else if (type == "Delete") {
 					EventDel eventDel = EventDel.newBuilder().setPartID(participantID).build();
 					int sub = myclient.broadcast(eventDel.toByteArray(), type);
+					Log.i("Locals", "Added Delete to locals");
 					locals.add(new Tuple<Integer, String, Integer>(sub, type + "," + added, pos));
 				}
 			}
