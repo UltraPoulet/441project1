@@ -1,5 +1,6 @@
 package com.example.project1;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Hashtable;
@@ -38,6 +39,7 @@ public class SubActivity extends Activity
 	private String Tag = "SubActivity";
 	private long participantID = -1;
 	private Dictionary<Long, Long> cursorLocs = new Hashtable<Long, Long>();
+	private ArrayDeque<Tuple<byte[], String, Integer>> globals;
 	EditTextModified etm;
 	
 	boolean broadcastJoin = false;
@@ -58,9 +60,9 @@ public class SubActivity extends Activity
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_main);
+		globals = new ArrayDeque<Tuple<byte[],String,Integer>>();
+		setContentView(R.layout.activity_main);	
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_NOSENSOR);
-		//this.setTitle("Testing");
 		
 		collabrify = new CollabrifyAdapter() {
 			@Override
@@ -84,76 +86,63 @@ public class SubActivity extends Activity
 			@Override
 			public void onReceiveEvent(final long orderId, int subId, final String eventType, final byte[] data)
 			{
-				runOnUiThread(new Runnable()
+				Log.d(Tag, "Received event " + eventType);
+				if(!etm.locals.isEmpty())
 				{
-					@Override
-					public void run()
+					//if we're at event
+					Log.i(Tag, "subid: " + etm.locals.getFirst().second.split(",")[0] + " actual: " + subId);
+					if(subId == etm.locals.getFirst().first)
 					{
-						Log.d(Tag, "Received event " + eventType);
-						myClient.pauseEvents();
-						//handle the incoming event
-						try {
-							if (eventType.contains("Move"))
-							{
-								EventMove eventMove = EventMove.parseFrom(data);
-								System.out.println(eventMove.getPartID() + " " + eventMove.getNewLoc());
-								cursorLocs.put(eventMove.getPartID(), eventMove.getNewLoc());
-								//Toast.makeText(getBaseContext(), eventType + " " + eventMove.getNewLoc(), //Toast.LENGTH_SHORT).show();
+						final Tuple<Integer, String, Integer> localelem = etm.locals.pop();
+						if(localelem.second.contains("Add"))
+						{
+							try {
+								Log.d(Tag, "Deleting local created");
+								runOnUiThread(new Runnable()
+								{
+									@Override
+									public void run()
+									{
+										etm.isAction = true;
+										etm.getText().delete(localelem.third, localelem.third + 1);
+										etm.isAction = false;
+									}
+								});
 							}
-							else if(eventType.contains("Add"))
-							{
-								try {
-									EventAdd eventAdd = EventAdd.parseFrom(data);
-									Log.d(Tag, eventAdd.getPartID() + " " + cursorLocs.get(eventAdd.getPartID()).toString() + " " + eventAdd.getChar());
-									if(eventAdd.getPartID() == participantID)
-										return;
-									int appendPos = cursorLocs.get(eventAdd.getPartID()).intValue();
-									etm.isAction = true;
-									etm.getText().insert(appendPos, eventAdd.getChar());
-									etm.history.adjustIndexes(appendPos, true);
-									etm.isAction = false;
-									//Toast.makeText(getBaseContext(), "Add " + eventAdd.getChar() + " " + appendPos, //Toast.LENGTH_SHORT).show();
-								}
-								catch (Exception e) {e.printStackTrace();}
-							}
-							else if(eventType.contains("Delete"))
-							{
-								try {
-									EventDel eventDel = EventDel.parseFrom(data);
-									if(eventDel.getPartID() == participantID)
-										return;
-									int appendPos = cursorLocs.get(eventDel.getPartID()).intValue();
-									etm.isAction = true;
-									etm.getText().delete(appendPos-1, appendPos);
-									etm.history.adjustIndexes(appendPos, false);
-									etm.isAction = false;
-									//Toast.makeText(getBaseContext(), "Delete " + appendPos, //Toast.LENGTH_SHORT).show();
-								}
-								catch (Exception e) {e.printStackTrace();}
-							}
-							else if(eventType.contains("Join"))
-							{
-								EventJoin eventJoin = EventJoin.parseFrom(data);
-								//start everyone at 0
-								cursorLocs.put(eventJoin.getPartID(), (long) 0);
-								Log.e(Tag, "Cursor Loc: " + eventJoin.getPartID() + " " + cursorLocs.get(eventJoin.getPartID()));
-								//Toast.makeText(getBaseContext(), eventType, //Toast.LENGTH_SHORT).show();
-							}
-							else if(eventType.contains("Leave"))
-							{
-								EventLeave eventLeave = EventLeave.parseFrom(data);
-								cursorLocs.remove(eventLeave.getPartID());
-								//Toast.makeText(getBaseContext(), eventType, //Toast.LENGTH_SHORT).show();
-							}
-							else
-								Log.d(Tag, "Invalid event Type: " + eventType);
+							catch (Exception e) {e.printStackTrace();}
 						}
-						catch(Exception e) {
-							e.printStackTrace();
+						else if(localelem.second.contains("Delete"))
+						{
+							try {
+								Log.d(Tag, "Adding local deleted " + localelem.second.split(",")[1]);
+								runOnUiThread(new Runnable()
+								{
+									@Override
+									public void run()
+									{
+										etm.isAction = true;
+										etm.getText().insert(localelem.third, localelem.second.split(",")[1]);
+										etm.isAction = false;
+									}
+								});
+							}
+							catch (Exception e) {e.printStackTrace();}
 						}
-						myClient.resumeEvents();
+						//run through globals up to event
+						while(!globals.isEmpty())
+						{
+							Log.i(Tag, "Globals not empty yet!");
+							Tuple<byte[], String, Integer> elem = globals.pop();
+							helper(elem.second, elem.first);
+						}
 					}
-				});
+					else
+					{
+						globals.add(new Tuple<byte[], String, Integer>(data, eventType, etm.getLocalsSize()));
+						return;
+					}
+				}
+				helper(eventType, data);
 			}
 	
 			@Override
@@ -184,6 +173,7 @@ public class SubActivity extends Activity
 						
 					});
 					Log.d(Tag,"It should have changed title");
+
 				}
 				catch(Exception e) { 
 					e.printStackTrace();
@@ -254,8 +244,7 @@ public class SubActivity extends Activity
 				try {
 					myClient.joinSession(sessionID, null);
 					endSessionVis = false;
-					invalidateOptionsMenu();				
-					
+					invalidateOptionsMenu();
 				} 
 				catch (Exception e1) {
 					e1.printStackTrace();
@@ -270,6 +259,75 @@ public class SubActivity extends Activity
 		}
 			
 		
+	}
+	
+	public void helper(final String eventType, final byte[] data)
+	{
+		runOnUiThread(new Runnable()
+		{
+			@Override
+			public void run()
+			{	
+				myClient.pauseEvents();
+				//handle the incoming event
+				try {
+					if (eventType.contains("Move"))
+					{
+						EventMove eventMove = EventMove.parseFrom(data);
+						System.out.println(eventMove.getPartID() + " " + eventMove.getNewLoc());
+						cursorLocs.put(eventMove.getPartID(), eventMove.getNewLoc());
+						//Toast.makeText(getBaseContext(), eventType + " " + eventMove.getNewLoc(), //Toast.LENGTH_SHORT).show();
+					}
+					else if(eventType.contains("Add"))
+					{
+						try {
+							EventAdd eventAdd = EventAdd.parseFrom(data);
+							Log.d(Tag, eventAdd.getPartID() + " " + cursorLocs.get(eventAdd.getPartID()).toString() + " " + eventAdd.getChar());
+							int appendPos = cursorLocs.get(eventAdd.getPartID()).intValue();
+							etm.isAction = true;
+							etm.getText().insert(appendPos, eventAdd.getChar());
+							etm.history.adjustIndexes(appendPos, true);
+							etm.isAction = false;
+							//Toast.makeText(getBaseContext(), "Add " + eventAdd.getChar() + " " + appendPos, //Toast.LENGTH_SHORT).show();
+						}
+						catch (Exception e) {e.printStackTrace();}
+					}
+					else if(eventType.contains("Delete"))
+					{
+						try {
+							EventDel eventDel = EventDel.parseFrom(data);
+							int appendPos = cursorLocs.get(eventDel.getPartID()).intValue();
+							etm.isAction = true;
+							etm.getText().delete(appendPos-1, appendPos);
+							etm.history.adjustIndexes(appendPos, false);
+							etm.isAction = false;
+							//Toast.makeText(getBaseContext(), "Delete " + appendPos, //Toast.LENGTH_SHORT).show();
+						}
+						catch (Exception e) {e.printStackTrace();}
+					}
+					else if(eventType.contains("Join"))
+					{
+						EventJoin eventJoin = EventJoin.parseFrom(data);
+						//start everyone at 0
+						cursorLocs.put(eventJoin.getPartID(), (long) 0);
+						Log.e(Tag, "Cursor Loc: " + eventJoin.getPartID() + " " + cursorLocs.get(eventJoin.getPartID()));
+						//Toast.makeText(getBaseContext(), eventType, //Toast.LENGTH_SHORT).show();
+					}
+					else if(eventType.contains("Leave"))
+					{
+						EventLeave eventLeave = EventLeave.parseFrom(data);
+						cursorLocs.remove(eventLeave.getPartID());
+						//Toast.makeText(getBaseContext(), eventType, //Toast.LENGTH_SHORT).show();
+					}
+					else
+						Log.d(Tag, "Invalid event Type: " + eventType);
+				}
+				catch(Exception e) {
+					e.printStackTrace();
+				}
+				myClient.resumeEvents();
+			}
+		});
 	}
 
 	@Override

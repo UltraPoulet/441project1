@@ -1,5 +1,7 @@
 package com.example.project1;
 
+import java.util.ArrayDeque;
+
 import com.example.project1.EventProtocols.EventAdd;
 import com.example.project1.EventProtocols.EventDel;
 import com.example.project1.EventProtocols.EventJoin;
@@ -25,7 +27,7 @@ public class EditTextModified extends EditText{
 	private boolean notBoot;
 	public boolean isAction;
 	public CollabrifyClient myclient = null;
-	
+	public ArrayDeque<Tuple<Integer, String, Integer>> locals = new ArrayDeque<Tuple<Integer,String,Integer>>();
 	public boolean broadcastJoin;
 	
 	public EditTextModified(Context context, AttributeSet attrs, int defStyle) {
@@ -41,6 +43,11 @@ public class EditTextModified extends EditText{
 	public EditTextModified(Context context) {
 	    super(context);
 	    setLongClickable(false);
+	}
+	
+	public int getLocalsSize()
+	{
+		return locals.size();
 	}
 
 	@Override
@@ -73,7 +80,7 @@ public class EditTextModified extends EditText{
 				history.clearRedo();
 				history.add(true, text.subSequence(start, start + lengthAfter).toString(), start, Type.CHAR_ADD);
 				try {
-					broadcast("Add", text.subSequence(start, start + lengthAfter).toString(), 0);
+					broadcast("Add", text.subSequence(start, start + lengthAfter).toString(), start);
 					Log.i("Tag", "Hey, we broadcasted an add");
 				}
 				catch(Exception e) {
@@ -86,7 +93,7 @@ public class EditTextModified extends EditText{
 				//Toast.makeText(getContext(), "Removed " + Integer.toString(lengthBefore - lengthAfter) + " chars " + temp + " at position: " + start, //Toast.LENGTH_SHORT).show();
 				history.add(true, temp, start, Type.CHAR_DELETE);
 				try {
-					broadcast("Delete", temp, 0);
+					broadcast("Delete", temp, start);
 					Log.i("Tag", "Hey, we broadcasted a delete");
 				}
 				catch(Exception e) {
@@ -187,15 +194,18 @@ public class EditTextModified extends EditText{
 				}
 				if (type == "Move") {
 					EventMove eventMove = EventMove.newBuilder().setPartID(participantID).setNewLoc(pos).build();
-					myclient.broadcast(eventMove.toByteArray(), type);
+					int sub = myclient.broadcast(eventMove.toByteArray(), type);
+					locals.add(new Tuple<Integer, String, Integer>(sub, type, pos));
 				}
 				else if (type == "Add") {
 					EventAdd eventAdd = EventAdd.newBuilder().setPartID(participantID).setChar(added).build();
-					myclient.broadcast(eventAdd.toByteArray(), type);
+					int sub = myclient.broadcast(eventAdd.toByteArray(), type);
+					locals.add(new Tuple<Integer, String, Integer>(sub, type, pos));
 				}
 				else if (type == "Delete") {
 					EventDel eventDel = EventDel.newBuilder().setPartID(participantID).build();
-					myclient.broadcast(eventDel.toByteArray(), type);
+					int sub = myclient.broadcast(eventDel.toByteArray(), type);
+					locals.add(new Tuple<Integer, String, Integer>(sub, type + "," + added, pos));
 				}
 			}
 			catch( CollabrifyException e ){Log.e("Tag", "error", e);}   
