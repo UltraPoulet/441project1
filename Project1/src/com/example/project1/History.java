@@ -3,6 +3,8 @@ package com.example.project1;
 import java.util.ArrayDeque;
 import java.util.Iterator;
 
+import android.util.Log;
+
 public class History
 {
 	enum Type { CURSOR_MOVE, SELECTION, CHAR_ADD, CHAR_DELETE }
@@ -19,21 +21,27 @@ public class History
 	public void adjustIndexes(int pos, boolean isAdd)
 	{
 		Iterator<Tuple<String,Integer,Type>> iter = undoHistory.iterator();
+		Tuple<String,Integer,Type> curr;
 		while(iter.hasNext())
 		{
-			Tuple<String,Integer,Type> curr = iter.next();
+			curr = iter.next();
 			if(isAdd)
 				if(curr.second >= pos)
 					curr.second++;
 			else
 				if(curr.second >= pos)
 					curr.second--;
-			System.out.println(curr.second);
+		}
+		iter = undoHistory.iterator();
+		while(iter.hasNext())
+		{
+			curr = iter.next();
+			Log.i("History", "val: " + curr.first + "pos: " + curr.second);
 		}
 		iter = redoHistory.iterator();
 		while(iter.hasNext())
 		{
-			Tuple<String,Integer,Type> curr = iter.next();
+			curr = iter.next();
 			if(isAdd)
 				if(curr.second >= pos)
 					curr.second++;

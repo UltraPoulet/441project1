@@ -87,12 +87,14 @@ public class SubActivity extends Activity
 			public void onReceiveEvent(final long orderId, int subId, final String eventType, final byte[] data)
 			{
 				Log.d(Tag, "Received event " + eventType);
+				boolean isOwner = false;
 				if(!etm.locals.isEmpty())
 				{
 					//if we're at event
 					Log.i(Tag, "subid: " + etm.locals.getFirst().second.split(",")[0] + " actual: " + subId);
 					if(subId == etm.locals.getFirst().first)
 					{
+						isOwner = true;
 						final Tuple<Integer, String, Integer> localelem = etm.locals.pop();
 						if(localelem.second.contains("Add"))
 						{
@@ -133,16 +135,20 @@ public class SubActivity extends Activity
 						{
 							Log.i(Tag, "Globals not empty yet!");
 							Tuple<byte[], String, Integer> elem = globals.pop();
-							helper(elem.second, elem.first);
+							//the only events that modify elements are adds and deletes
+							//there are no owned adds/deletes in this array, it's all
+							//other people. Finding your first add/delete is the trigger to
+							//stop adding.
+							helper(elem.second, elem.first, false);
 						}
 					}
 					else
 					{
-						globals.add(new Tuple<byte[], String, Integer>(data, eventType, etm.getLocalsSize()));
+						globals.add(new Tuple<byte[], String, Integer>(data, eventType, subId));
 						return;
 					}
 				}
-				helper(eventType, data);
+				helper(eventType, data, isOwner);
 			}
 	
 			@Override
@@ -261,7 +267,7 @@ public class SubActivity extends Activity
 		
 	}
 	
-	public void helper(final String eventType, final byte[] data)
+	public void helper(final String eventType, final byte[] data, final boolean owner)
 	{
 		runOnUiThread(new Runnable()
 		{
@@ -286,9 +292,11 @@ public class SubActivity extends Activity
 							int appendPos = cursorLocs.get(eventAdd.getPartID()).intValue();
 							etm.isAction = true;
 							etm.getText().insert(appendPos, eventAdd.getChar());
-							etm.history.adjustIndexes(appendPos, true);
+							if(!owner)
+								etm.history.adjustIndexes(appendPos, true);
 							etm.isAction = false;
 							//Toast.makeText(getBaseContext(), "Add " + eventAdd.getChar() + " " + appendPos, //Toast.LENGTH_SHORT).show();
+							Log.i(Tag, etm.history.strMerge());
 						}
 						catch (Exception e) {e.printStackTrace();}
 					}
@@ -299,9 +307,11 @@ public class SubActivity extends Activity
 							int appendPos = cursorLocs.get(eventDel.getPartID()).intValue();
 							etm.isAction = true;
 							etm.getText().delete(appendPos-1, appendPos);
-							etm.history.adjustIndexes(appendPos, false);
+							if(!owner)
+								etm.history.adjustIndexes(appendPos, false);
 							etm.isAction = false;
 							//Toast.makeText(getBaseContext(), "Delete " + appendPos, //Toast.LENGTH_SHORT).show();
+							Log.i(Tag, etm.history.strMerge());
 						}
 						catch (Exception e) {e.printStackTrace();}
 					}

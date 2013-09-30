@@ -1,6 +1,7 @@
 package com.example.project1;
 
 import java.util.ArrayDeque;
+import java.util.Iterator;
 
 import com.example.project1.EventProtocols.EventAdd;
 import com.example.project1.EventProtocols.EventDel;
@@ -99,6 +100,7 @@ public class EditTextModified extends EditText{
 				catch(Exception e) {
 					//non issue, we're in main
 				}
+				Log.i("Tag", history.strMerge());
 			}
 			history.clearRedo();
 		}
