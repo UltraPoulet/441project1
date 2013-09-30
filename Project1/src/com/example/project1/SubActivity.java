@@ -88,6 +88,7 @@ public class SubActivity extends Activity
 			@Override
 			public void onReceiveEvent(final long orderId, int subId, final String eventType, final byte[] data)
 			{
+				//myClient.pauseEvents();
 				Log.d(Tag, "Received event " + eventType);
 				boolean isOwner = false;
 				if(!etm.locals.isEmpty())
@@ -99,8 +100,14 @@ public class SubActivity extends Activity
 						isOwner = true;
 						final Tuple<Integer, String, Integer> localelem = etm.locals.pop();
 						//don't delete locals on an undo, it effectively undoes your undo.
-						if(etm.longActivity && !localelem.second.contains("Move"))
-							etm.longActivity = false;
+						if(!etm.longActivity.isEmpty() && etm.longActivity.getFirst() == subId){
+							Log.d(Tag, localelem.second + " entered thingy " + etm.subActivity);
+							if(!localelem.second.contains("Move")){
+								etm.longActivity.pop();
+								Log.d(Tag, localelem.second);
+							}
+						}
+							
 						else if(localelem.second.contains("Add"))
 						{
 							try {
@@ -152,10 +159,12 @@ public class SubActivity extends Activity
 					{
 						Log.i(Tag, eventType + " sub id: " + subId);
 						globals.add(new Tuple<byte[], String, Integer>(data, eventType, subId));
+						//myClient.resumeEvents();
 						return;
 					}
 				}
 				helper(eventType, data, isOwner);
+				//myClient.resumeEvents();
 			}
 	
 			@Override
@@ -281,7 +290,7 @@ public class SubActivity extends Activity
 			@Override
 			public void run()
 			{	
-				myClient.pauseEvents();
+				//myClient.pauseEvents();
 				//handle the incoming event
 				try {
 					if (eventType.contains("Move"))
@@ -342,7 +351,7 @@ public class SubActivity extends Activity
 				catch(Exception e) {
 					e.printStackTrace();
 				}
-				myClient.resumeEvents();
+				//myClient.resumeEvents();
 			}
 		});
 	}

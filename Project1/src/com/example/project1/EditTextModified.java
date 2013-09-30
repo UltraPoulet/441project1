@@ -31,7 +31,7 @@ public class EditTextModified extends EditText{
 	public ArrayDeque<Tuple<Integer, String, Integer>> locals = new ArrayDeque<Tuple<Integer,String,Integer>>();
 	public boolean broadcastJoin;
 	public boolean subActivity = false;
-	public boolean longActivity = false;
+	public ArrayDeque<Integer> longActivity = new ArrayDeque<Integer>();
 	
 	public EditTextModified(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
@@ -135,7 +135,6 @@ public class EditTextModified extends EditText{
 		if(next.third != Type.CURSOR_MOVE)
 			history.add(isUndo, next);
 		isAction = true;
-		longActivity = true;
 		switch(next.third)
 		{
 			//functional
@@ -211,12 +210,18 @@ public class EditTextModified extends EditText{
 					EventAdd eventAdd = EventAdd.newBuilder().setPartID(participantID).setChar(added).build();
 					int sub = myclient.broadcast(eventAdd.toByteArray(), type);
 					Log.i("Locals", "Added Add to locals");
+					if (isAction){
+						longActivity.add(sub);
+					}
 					locals.add(new Tuple<Integer, String, Integer>(sub, type, pos));
 				}
 				else if (type == "Delete") {
 					EventDel eventDel = EventDel.newBuilder().setPartID(participantID).build();
 					int sub = myclient.broadcast(eventDel.toByteArray(), type);
 					Log.i("Locals", "Added Delete to locals");
+					if(isAction){
+						longActivity.add(sub);
+					}
 					locals.add(new Tuple<Integer, String, Integer>(sub, type + "," + added, pos));
 				}
 			}
