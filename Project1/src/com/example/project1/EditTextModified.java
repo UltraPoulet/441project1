@@ -30,6 +30,8 @@ public class EditTextModified extends EditText{
 	public CollabrifyClient myclient = null;
 	public ArrayDeque<Tuple<Integer, String, Integer>> locals = new ArrayDeque<Tuple<Integer,String,Integer>>();
 	public boolean broadcastJoin;
+	public boolean subActivity = false;
+	public boolean longActivity = false;
 	
 	public EditTextModified(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
@@ -133,6 +135,7 @@ public class EditTextModified extends EditText{
 		if(next.third != Type.CURSOR_MOVE)
 			history.add(isUndo, next);
 		isAction = true;
+		longActivity = true;
 		switch(next.third)
 		{
 			//functional
@@ -148,16 +151,18 @@ public class EditTextModified extends EditText{
 				if(isUndo)
 				{
 					broadcast("Move","", next.second+1);
-					broadcast("Delete","",0);
+					broadcast("Delete",next.first,next.second);
 					broadcast("Move","",lastPos);
-					this.getText().delete(next.second, next.second + next.first.length());
+					if(!subActivity)
+						this.getText().delete(next.second, next.second + next.first.length());
 				}
 				else
 				{
 					broadcast("Move","",next.second);
-					broadcast("Add",next.first,0);
+					broadcast("Add",next.first,next.second);
 					broadcast("Move","",lastPos);
-					this.getText().insert(next.second, next.first);
+					if(!subActivity)
+						this.getText().insert(next.second, next.first);
 				}
 				break;
 			//faulted out once, appears functional now?
@@ -165,16 +170,18 @@ public class EditTextModified extends EditText{
 				if(isUndo)
 				{
 					broadcast("Move","",next.second);
-					broadcast("Add",next.first,0);
+					broadcast("Add",next.first,next.second);
 					broadcast("Move","",lastPos);
-					this.getText().insert(next.second, next.first);
+					if(!subActivity)
+						this.getText().insert(next.second, next.first);
 				}
 				else
 				{
-					broadcast("Move","", next.second);
-					broadcast("Delete","",0);
+					broadcast("Move","", next.second+1);
+					broadcast("Delete",next.first,next.second);
 					broadcast("Move","",lastPos);
-					this.getText().delete(next.second, next.second + next.first.length());
+					if(!subActivity)
+						this.getText().delete(next.second, next.second + next.first.length());
 				}
 				break;
 			default:

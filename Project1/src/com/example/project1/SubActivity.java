@@ -52,6 +52,7 @@ public class SubActivity extends Activity
 			Log.i(Tag, "hey, we worked!");
 			etm.myclient = myClient;
 			etm.broadcastJoin = broadcastJoin;
+			etm.subActivity = true;
 			broadcastJoin = true;
 		}
 		super.onWindowFocusChanged(hasFocus);
@@ -91,12 +92,15 @@ public class SubActivity extends Activity
 				if(!etm.locals.isEmpty())
 				{
 					//if we're at event
-					Log.i(Tag, "subid: " + etm.locals.getFirst().second.split(",")[0] + " actual: " + subId);
+					Log.i(Tag, "subid: " + etm.locals.getFirst().first + " actual: " + subId);
 					if(subId == etm.locals.getFirst().first)
 					{
 						isOwner = true;
 						final Tuple<Integer, String, Integer> localelem = etm.locals.pop();
-						if(localelem.second.contains("Add"))
+						//don't delete locals on an undo, it effectively undoes your undo.
+						if(etm.longActivity && !localelem.second.contains("Move"))
+							etm.longActivity = false;
+						else if(localelem.second.contains("Add"))
 						{
 							try {
 								Log.d(Tag, "Deleting local created");
@@ -116,7 +120,7 @@ public class SubActivity extends Activity
 						else if(localelem.second.contains("Delete"))
 						{
 							try {
-								Log.d(Tag, "Adding local deleted " + localelem.second.split(",")[1]);
+								Log.d(Tag, "Adding local deleted " + localelem.second.split(",")[1] + " to " + localelem.third);
 								runOnUiThread(new Runnable()
 								{
 									@Override
@@ -144,6 +148,7 @@ public class SubActivity extends Activity
 					}
 					else
 					{
+						Log.i(Tag, eventType + " sub id: " + subId);
 						globals.add(new Tuple<byte[], String, Integer>(data, eventType, subId));
 						return;
 					}
