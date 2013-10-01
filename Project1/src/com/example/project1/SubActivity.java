@@ -36,7 +36,6 @@ public class SubActivity extends Activity
 	private String Tag = "WeWrite SubActivity";
 	private long participantID = -1;
 	private Dictionary<Long, Long> cursorLocs = new Hashtable<Long, Long>();
-	private ListIterator<Event> lastLocal = null;
 	EditTextModified etm;
 	private boolean onBoot = true;
 	private boolean isCreate = false;
@@ -53,6 +52,7 @@ public class SubActivity extends Activity
 				Log.i(Tag, "hey, we worked!");
 				etm.myclient = myClient;
 				etm.subActivity = true;
+				etm.first = isCreate;
 				broadcastJoin = true;
 			}
 		}
@@ -103,14 +103,23 @@ public class SubActivity extends Activity
 				{
 					//start just after the last event
 					ListIterator<Event> mostRecent = etm.allEvents.listIterator(etm.allEvents.size());
-					if(lastLocal == null)
-						lastLocal = etm.allEvents.listIterator();
-					ListIterator<Event> next = lastLocal;
 					//if we're at event
 					Log.i(Tag, "subid: " + etm.allEvents.get(etm.allEvents.size() - 1).subId + " actual: " + subId);
-					if(subId == etm.leastRecent.subId)
+					if(etm.leastRecent != null && subId == etm.leastRecent.subId)
 					{
-						Event ev;
+						Event ev = null;
+						if(eventType.contains("Join"))
+						{
+							cursorLocs.put(participantID, (long)0);
+							Log.e(Tag, "Cursor Loc: " + participantID + " " + cursorLocs.get(participantID));
+						}
+						
+						if(!mostRecent.hasPrevious()){
+							Log.d(Tag, "mostRecent has no previous");
+						}
+						else{
+							Log.d(Tag, "it has previous?");
+						}
 						//undo all events down to locals
 						while(mostRecent.hasPrevious())
 						{
@@ -122,12 +131,6 @@ public class SubActivity extends Activity
 							//}
 							
 							ev = mostRecent.previous();
-							//get out if we're now looking at the event
-							if(ev.skip)
-							{
-								Log.d(Tag, "Get out of jail free card");
-								break;
-							}
 							
 							if(ev.eventType.contains("Add"))
 							{
@@ -145,13 +148,33 @@ public class SubActivity extends Activity
 								}
 								catch (Exception e) {e.printStackTrace();}
 							}
+							else{
+								Log.d(Tag, "This is something else " + ev.eventType);
+							}
+							//get out if we're now looking at the event
+							if(ev.skip)
+							{
+								Log.d(Tag, "Get out of jail free card");
+								break;
+							}
 						}
 						//mostRecent now equals the last local
+						if(mostRecent.hasNext() || mostRecent.hasPrevious())
+						{
+							ev.skip = true;
+							if(!ev.eventType.contains("Join") && !ev.eventType.contains("Move") && !ev.eventType.contains("Leave"))
+								appendPos(ev.location, (ev.eventType.contains("Add")));
+						}
 						
 						boolean first = true;
 						
+						if(!mostRecent.hasNext()){
+							Log.d(Tag, "mostRecent has no next");
+						}
+						
 						while(mostRecent.hasNext())
 						{
+							//ev=mostRecent.
 							ev = mostRecent.next();
 							
 							Log.d(Tag, "Params: " + ev.isLocal + " " + first + " " + !ev.skip);
@@ -161,7 +184,6 @@ public class SubActivity extends Activity
 								ev.skip = true;
 								Log.d(Tag, "Changed lastLocal: " + ev.eventType + " char: " + ev.deleted);
 								etm.leastRecent = ev;
-								lastLocal = mostRecent;
 							}
 							
 							if(ev.eventType.contains("Add"))
@@ -182,6 +204,12 @@ public class SubActivity extends Activity
 							}
 							
 						}
+						
+						if(first)
+						{
+							Log.d(Tag, "Setting leastRecent to null");
+							etm.leastRecent = null;
+						}
 						//if we've caught up to our first join and this is the first run
 						if(onBoot)
 						{
@@ -196,14 +224,14 @@ public class SubActivity extends Activity
 								}
 							});
 						}
-						
-						//set lastlocal to the value we found
-						lastLocal = next;
 					}
 					else
 					{
 						helper(eventType, data, subId);
 					}
+				}
+				else{
+					Log.d(Tag, "allEvents empty");
 				}
 				//myClient.resumeEvents();
 			}
@@ -257,7 +285,7 @@ public class SubActivity extends Activity
 			}
 			@Override
 			public void onParticipantJoined(CollabrifyParticipant p) {
-				if(isCreate && etm.leastRecent == null)
+				if(isCreate && cursorLocs.get(participantID) == null)
 				{
 					broadcast("Join", "");
 					Log.i(Tag, "Broadcasted Join");
@@ -345,7 +373,7 @@ public class SubActivity extends Activity
 				}
 				else
 				{
-					Log.d(Tag, "Cursor for " + curr + " incremented, " + cursorLocs.get(curr) + " >= " + pos);
+					Log.d(Tag, "Cursor for " + curr + " decremented, " + cursorLocs.get(curr) + " >= " + pos);
 					cursorLocs.put(curr, cursorLocs.get(curr) - 1);
 				}
 			}
@@ -361,9 +389,13 @@ public class SubActivity extends Activity
 			{
 				etm.isAction = true;
 				if(isAdd)
+				{
 					etm.getText().insert(ev.location, ev.deleted);
+				}
 				else
+				{
 					etm.getText().delete(ev.location, ev.location+1);
+				}
 				etm.isAction = false;
 			}
 		});
@@ -413,7 +445,8 @@ public class SubActivity extends Activity
 							EventDel eventDel = EventDel.parseFrom(data);
 							int appendPos = cursorLocs.get(eventDel.getPartID()).intValue();
 							etm.isAction = true;
-							String deleted = String.valueOf(etm.getText().charAt(appendPos));
+							String deleted = String.valueOf(etm.getText().charAt(appendPos-1));
+							Log.d(Tag, "Pos: " + appendPos);
 							etm.getText().delete(appendPos-1, appendPos);
 							if(!(eventDel.getPartID() == participantID))
 								etm.history.adjustIndexes(appendPos, false);

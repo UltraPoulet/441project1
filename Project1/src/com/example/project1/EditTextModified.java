@@ -35,6 +35,7 @@ public class EditTextModified extends EditText{
 	private String Tag = "WeWrite ETM";
 	private boolean sendMove = false;
 	public Event leastRecent = null;
+	public boolean first = false;
 	
 	public EditTextModified(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
@@ -113,10 +114,10 @@ public class EditTextModified extends EditText{
 				catch(Exception e) {
 					//non issue, we're in main
 				}
-				Log.d(Tag, history.strMerge());
 			}
 			history.clearRedo();
 		}
+		Log.d(Tag, history.strMerge());
 		//Toast.makeText(getContext(), history.strMerge(), //Toast.LENGTH_SHORT).show();
 		prev = text.toString();
 		changedText = true;
@@ -208,13 +209,13 @@ public class EditTextModified extends EditText{
 			try
 			{
 				long participantID = myclient.currentSessionParticipantId();
-				if(leastRecent == null){
+				if(first){
 					EventJoin eventJoin = EventJoin.newBuilder().setPartID(participantID).build();
 					int sub = myclient.broadcast(eventJoin.toByteArray(), "Join");
 					if(leastRecent == null)
 					{
-						Log.d(Tag, "etm.leastRecent set!");
-						leastRecent = new Event(sub, type, added, 0, true, false);
+						Log.d(Tag, "leastRecent set!");
+						leastRecent = new Event(sub, "Join", added, 0, true, false);
 						allEvents.add(leastRecent);
 					}
 				}
@@ -222,7 +223,17 @@ public class EditTextModified extends EditText{
 					EventMove eventMove = EventMove.newBuilder().setPartID(participantID).setNewLoc(pos).build();
 					int sub = myclient.broadcast(eventMove.toByteArray(), type);
 					Log.d(Tag, "Added Move to locals");
-					allEvents.add(new Event(sub, type, "", pos, true, false));
+					if(leastRecent == null)
+					{
+						Log.d(Tag, "leastRecent set!");
+						leastRecent = new Event(sub, type, "", pos, true, true);
+						allEvents.add(leastRecent);
+					}
+					else
+					{
+						Log.d(Tag, "Least recent not null: " + leastRecent.eventType + " " + leastRecent.location + " " + leastRecent.deleted);
+						allEvents.add(new Event(sub, type, "", pos, true, false));
+					}
 				}
 				else if (type == "Add") {
 					EventAdd eventAdd = EventAdd.newBuilder().setPartID(participantID).setChar(added).build();
@@ -231,7 +242,17 @@ public class EditTextModified extends EditText{
 					if (isAction){
 						longActivity.add(sub);
 					}
-					allEvents.add(new Event(sub, type, added, pos, true, false));
+					if(leastRecent == null)
+					{
+						Log.d(Tag, "leastRecent set!");
+						leastRecent = new Event(sub, type, added, pos, true, true);
+						allEvents.add(leastRecent);
+					}
+					else
+					{
+						Log.d(Tag, "Least recent not null: " + leastRecent.eventType + " " + leastRecent.location + " " + leastRecent.deleted);
+						allEvents.add(new Event(sub, type, added, pos, true, false));
+					}
 				}
 				else if (type == "Delete") {
 					EventDel eventDel = EventDel.newBuilder().setPartID(participantID).build();
@@ -240,7 +261,17 @@ public class EditTextModified extends EditText{
 					if(isAction){
 						longActivity.add(sub);
 					}
-					allEvents.add(new Event(sub, type, added, pos, true, false));
+					if(leastRecent == null)
+					{
+						Log.d(Tag, "leastRecent set!");
+						leastRecent = new Event(sub, type, added, pos, true, true);
+						allEvents.add(leastRecent);
+					}
+					else
+					{
+						Log.d(Tag, "Least recent not null: " + leastRecent.eventType + " " + leastRecent.location + " " + leastRecent.deleted);
+						allEvents.add(new Event(sub, type, added, pos, true, false));
+					}
 				}
 			}
 			catch( CollabrifyException e ){Log.e(Tag, "error", e);}   
