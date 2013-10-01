@@ -161,6 +161,7 @@ public class MainActivity extends Activity {
 					Intent i = new Intent(getBaseContext(), SubActivity.class);
 					i.putExtra("name", sessionName);
 					i.putExtra("text", text);
+					i.putExtra("isCreate", true);
 					startActivity(i);
 				}
 			});

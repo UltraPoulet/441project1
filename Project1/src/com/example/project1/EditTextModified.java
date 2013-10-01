@@ -30,11 +30,11 @@ public class EditTextModified extends EditText{
 	public CollabrifyClient myclient = null;
 	//subId, eventType, char deleted, location, bool
 	public ArrayList<Event> allEvents = new ArrayList<Event>();
-	public boolean broadcastJoin;
 	public boolean subActivity = false;
 	public ArrayDeque<Integer> longActivity = new ArrayDeque<Integer>();
 	private String Tag = "WeWrite ETM";
 	private boolean sendMove = false;
+	public Event leastRecent = null;
 	
 	public EditTextModified(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
@@ -208,10 +208,15 @@ public class EditTextModified extends EditText{
 			try
 			{
 				long participantID = myclient.currentSessionParticipantId();
-				if(!broadcastJoin){
+				if(leastRecent == null){
 					EventJoin eventJoin = EventJoin.newBuilder().setPartID(participantID).build();
-					myclient.broadcast(eventJoin.toByteArray(), "Join");
-					broadcastJoin = true;
+					int sub = myclient.broadcast(eventJoin.toByteArray(), "Join");
+					if(leastRecent == null)
+					{
+						Log.d(Tag, "etm.leastRecent set!");
+						leastRecent = new Event(sub, type, added, 0, true, false);
+						allEvents.add(leastRecent);
+					}
 				}
 				if (type == "Move") {
 					EventMove eventMove = EventMove.newBuilder().setPartID(participantID).setNewLoc(pos).build();
@@ -222,7 +227,7 @@ public class EditTextModified extends EditText{
 				else if (type == "Add") {
 					EventAdd eventAdd = EventAdd.newBuilder().setPartID(participantID).setChar(added).build();
 					int sub = myclient.broadcast(eventAdd.toByteArray(), type);
-					Log.d(Tag, "Added Add to locals");
+					Log.d(Tag, "Added Add to locals at " + pos);
 					if (isAction){
 						longActivity.add(sub);
 					}
@@ -231,7 +236,7 @@ public class EditTextModified extends EditText{
 				else if (type == "Delete") {
 					EventDel eventDel = EventDel.newBuilder().setPartID(participantID).build();
 					int sub = myclient.broadcast(eventDel.toByteArray(), type);
-					Log.d(Tag, "Added Delete to locals");
+					Log.d(Tag, "Added Delete to locals at " + pos);
 					if(isAction){
 						longActivity.add(sub);
 					}

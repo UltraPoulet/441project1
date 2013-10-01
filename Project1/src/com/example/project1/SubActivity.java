@@ -15,6 +15,7 @@ import com.example.project1.EventProtocols.EventMove;
 import edu.umich.imlc.collabrify.client.CollabrifyAdapter;
 import edu.umich.imlc.collabrify.client.CollabrifyClient;
 import edu.umich.imlc.collabrify.client.CollabrifyListener;
+import edu.umich.imlc.collabrify.client.CollabrifyParticipant;
 import edu.umich.imlc.collabrify.client.exceptions.CollabrifyException;
 import android.app.Activity;
 import android.content.Intent;
@@ -27,7 +28,6 @@ import android.view.MenuItem;
 public class SubActivity extends Activity
 {
 	public CollabrifyClient myClient;
-	boolean first = true;
 	private long sessionID;
 	private String sessionName;
 	private CollabrifyListener collabrify;
@@ -39,7 +39,6 @@ public class SubActivity extends Activity
 	private ListIterator<Event> lastLocal = null;
 	EditTextModified etm;
 	private boolean onBoot = true;
-	public Event leastRecent = null;
 	private boolean isCreate = false;
 	
 	boolean broadcastJoin = false;
@@ -53,9 +52,7 @@ public class SubActivity extends Activity
 				etm = (EditTextModified)this.getCurrentFocus();
 				Log.i(Tag, "hey, we worked!");
 				etm.myclient = myClient;
-				etm.broadcastJoin = broadcastJoin;
 				etm.subActivity = true;
-				etm.setFocusable(false);
 				broadcastJoin = true;
 			}
 		}
@@ -96,7 +93,12 @@ public class SubActivity extends Activity
 			public void onReceiveEvent(final long orderId, int subId, final String eventType, final byte[] data)
 			{
 				Log.d(Tag, "Received event: " + eventType);
-				Log.d(Tag, "" + etm.allEvents.size());
+				Enumeration<Long> cursors = cursorLocs.keys();
+				while(cursors.hasMoreElements())
+				{
+					Long curr = cursors.nextElement();
+					Log.d(Tag, curr + " at: " + cursorLocs.get(curr));
+				}
 				if(!etm.allEvents.isEmpty())
 				{
 					//start just after the last event
@@ -106,27 +108,8 @@ public class SubActivity extends Activity
 					ListIterator<Event> next = lastLocal;
 					//if we're at event
 					Log.i(Tag, "subid: " + etm.allEvents.get(etm.allEvents.size() - 1).subId + " actual: " + subId);
-					if(subId == leastRecent.subId)
+					if(subId == etm.leastRecent.subId)
 					{
-						//if we've caught up to our first join and this is the first run
-						if(onBoot)
-						{
-							onBoot = false;
-							runOnUiThread(new Runnable()
-							{
-								@Override
-								public void run()
-								{
-									//Log.d(Tag, "We got here");
-									etm.setFocusableInTouchMode(true);
-									//etm.setSelection(0);
-								}
-							});
-							//Log.d(Tag, "It should change");
-							//etm.setSelection(0);
-							//etm.invalidate();
-							//Log.d(Tag, etm.)
-						}
 						Event ev;
 						//undo all events down to locals
 						while(mostRecent.hasPrevious())
@@ -140,8 +123,11 @@ public class SubActivity extends Activity
 							
 							ev = mostRecent.previous();
 							//get out if we're now looking at the event
-							if(mostRecent == lastLocal)
+							if(ev.skip)
+							{
+								Log.d(Tag, "Get out of jail free card");
 								break;
+							}
 							
 							if(ev.eventType.contains("Add"))
 							{
@@ -161,17 +147,20 @@ public class SubActivity extends Activity
 							}
 						}
 						//mostRecent now equals the last local
-						//redo all events from last local on
+						
 						boolean first = true;
+						
 						while(mostRecent.hasNext())
 						{
 							ev = mostRecent.next();
 							
-							if(ev.isLocal && first)
+							Log.d(Tag, "Params: " + ev.isLocal + " " + first + " " + !ev.skip);
+							if(ev.isLocal && first && !ev.skip)
 							{
 								first = false;
-								Log.d(Tag, "Changed lastLocal: " + ev.eventType);
-								leastRecent = ev;
+								ev.skip = true;
+								Log.d(Tag, "Changed lastLocal: " + ev.eventType + " char: " + ev.deleted);
+								etm.leastRecent = ev;
 								lastLocal = mostRecent;
 							}
 							
@@ -191,20 +180,31 @@ public class SubActivity extends Activity
 								}
 								catch (Exception e) {e.printStackTrace();}
 							}
+							
+						}
+						//if we've caught up to our first join and this is the first run
+						if(onBoot)
+						{
+							onBoot = false;
+							runOnUiThread(new Runnable()
+							{
+								@Override
+								public void run()
+								{
+									etm.setFocusableInTouchMode(true);
+									etm.setSelection(0);
+								}
+							});
 						}
 						
 						//set lastlocal to the value we found
 						lastLocal = next;
-						if(onBoot){
-							etm.setSelection(0);
-						}
 					}
-					else{
-						
-						helper(eventType,data,subId);
+					else
+					{
+						helper(eventType, data, subId);
 					}
 				}
-				//helper(eventType, data, subId);
 				//myClient.resumeEvents();
 			}
 	
@@ -228,13 +228,13 @@ public class SubActivity extends Activity
 							try {
 								String sessionName = myClient.currentSessionName();
 								setTitle("WeWrite " + sessionName);
+								etm.setFocusable(false);
 							} catch (CollabrifyException e) {
 								e.printStackTrace();
 							}
 						}
 						
 					});
-					etm.setSelection(0);
 					Log.d(Tag,"It should have changed title");
 				}
 				catch(Exception e) { 
@@ -248,8 +248,6 @@ public class SubActivity extends Activity
 				Log.d(Tag, "Session created: " + id);
 				try {
 					participantID = myClient.currentSessionParticipantId();
-					broadcast("Join", "");
-					Log.i(Tag, "Broadcasted Join");
 					sessionID = id;
 					isCreate = true;
 				}
@@ -257,7 +255,15 @@ public class SubActivity extends Activity
 					e.printStackTrace();
 				}
 			}
-			
+			@Override
+			public void onParticipantJoined(CollabrifyParticipant p) {
+				if(isCreate && etm.leastRecent == null)
+				{
+					broadcast("Join", "");
+					Log.i(Tag, "Broadcasted Join");
+				}
+				super.onParticipantJoined(p);
+			}
 			@Override
 			public void onSessionEnd(long id){
 				super.onSessionEnd(id);
@@ -285,6 +291,7 @@ public class SubActivity extends Activity
 		tags.add("Default");
 		
 		text = getIntent().getStringExtra("text");
+		isCreate = getIntent().getBooleanExtra("isCreate", false);
 		
 		String vars = getIntent().getStringExtra("name");
 		//System.out.println(vars);
@@ -511,12 +518,12 @@ public class SubActivity extends Activity
 					EventJoin eventJoin = EventJoin.newBuilder().setPartID(participantID).build();
 					int sub = myClient.broadcast(eventJoin.toByteArray(), type);
 					//helper(type, eventJoin.toByteArray(), sub);
-					if(leastRecent == null)
+					if(etm.leastRecent == null)
 					{
-						Log.d(Tag, "leastRecent set!");
-						leastRecent = new Event(sub, type, added, 0, true, false);
+						Log.d(Tag, "etm.leastRecent set!");
+						etm.leastRecent = new Event(sub, type, added, 0, true, false);
+						etm.allEvents.add(etm.leastRecent);
 					}
-					etm.allEvents.add(leastRecent);
 				}
 				else if (type == "Leave") {
 					EventLeave eventLeave = EventLeave.newBuilder().setPartID(participantID).build();
