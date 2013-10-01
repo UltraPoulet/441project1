@@ -33,7 +33,7 @@ public class MainActivity extends Activity {
 	private String sessionName;
 	private CollabrifyListener collabrify;
 	private ArrayList<String> tags = new ArrayList<String>();
-	private String Tag = "MainActivity";
+	private String Tag = "WeWrite MainActivity";
 	private String text = null;
 	
 	@Override

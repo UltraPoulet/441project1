@@ -1,16 +1,16 @@
 package com.example.project1;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Dictionary;
+import java.util.Enumeration;
 import java.util.Hashtable;
+import java.util.ListIterator;
 
 import com.example.project1.EventProtocols.EventAdd;
 import com.example.project1.EventProtocols.EventDel;
 import com.example.project1.EventProtocols.EventJoin;
 import com.example.project1.EventProtocols.EventLeave;
 import com.example.project1.EventProtocols.EventMove;
-import com.example.project1.History.Type;
 
 import edu.umich.imlc.collabrify.client.CollabrifyAdapter;
 import edu.umich.imlc.collabrify.client.CollabrifyClient;
@@ -23,46 +23,53 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Toast;
 
 public class SubActivity extends Activity
 {
 	public CollabrifyClient myClient;
-	boolean createSessionVis = false;
-	boolean endSessionVis = true;
-	boolean joinSessionVis = false;
-	boolean leaveSessionVis = true;
+	boolean first = true;
 	private long sessionID;
 	private String sessionName;
 	private CollabrifyListener collabrify;
 	private ArrayList<String> tags = new ArrayList<String>();
 	private String text = "";
-	private String Tag = "SubActivity";
+	private String Tag = "WeWrite SubActivity";
 	private long participantID = -1;
 	private Dictionary<Long, Long> cursorLocs = new Hashtable<Long, Long>();
-	private ArrayDeque<Tuple<byte[], String, Integer>> globals;
+	private ListIterator<Event> lastLocal = null;
 	EditTextModified etm;
+	private boolean onBoot = true;
+	public Event leastRecent = null;
+	private boolean isCreate = false;
 	
 	boolean broadcastJoin = false;
 	
 	@Override
 	public void onWindowFocusChanged(boolean hasFocus) {
-		if(this.getCurrentFocus() instanceof EditTextModified)
+		if(onBoot)
 		{
-			etm = (EditTextModified)this.getCurrentFocus();
-			Log.i(Tag, "hey, we worked!");
-			etm.myclient = myClient;
-			etm.broadcastJoin = broadcastJoin;
-			etm.subActivity = true;
-			broadcastJoin = true;
+			if(this.getCurrentFocus() instanceof EditTextModified)
+			{
+				etm = (EditTextModified)this.getCurrentFocus();
+				Log.i(Tag, "hey, we worked!");
+				etm.myclient = myClient;
+				etm.broadcastJoin = broadcastJoin;
+				etm.subActivity = true;
+				etm.setFocusable(false);
+				broadcastJoin = true;
+			}
 		}
 		super.onWindowFocusChanged(hasFocus);
+	}
+	@Override
+	public void onBackPressed() {
+		// TODO Auto-generated method stub
+		super.onBackPressed();
 	}
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		globals = new ArrayDeque<Tuple<byte[],String,Integer>>();
 		setContentView(R.layout.activity_main);	
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_NOSENSOR);
 		
@@ -88,82 +95,102 @@ public class SubActivity extends Activity
 			@Override
 			public void onReceiveEvent(final long orderId, int subId, final String eventType, final byte[] data)
 			{
-				//myClient.pauseEvents();
-				Log.d(Tag, "Received event " + eventType);
-				boolean isOwner = false;
-				if(!etm.locals.isEmpty())
+				Log.d(Tag, "Received event: " + eventType);
+				if(!etm.allEvents.isEmpty())
 				{
+					//start just after the last event
+					ListIterator<Event> mostRecent = etm.allEvents.listIterator(etm.allEvents.size());
+					if(lastLocal == null)
+						lastLocal = etm.allEvents.listIterator();
+					ListIterator<Event> next = lastLocal;
 					//if we're at event
-					Log.i(Tag, "subid: " + etm.locals.getFirst().first + " actual: " + subId);
-					if(subId == etm.locals.getFirst().first)
+					Log.i(Tag, "subid: " + etm.allEvents.get(etm.allEvents.size() - 1).subId + " actual: " + subId);
+					if(subId == leastRecent.subId)
 					{
-						isOwner = true;
-						final Tuple<Integer, String, Integer> localelem = etm.locals.pop();
-						//don't delete locals on an undo, it effectively undoes your undo.
-						if(!etm.longActivity.isEmpty() && etm.longActivity.getFirst() == subId){
-							Log.d(Tag, localelem.second + " entered thingy " + etm.subActivity);
-							if(!localelem.second.contains("Move")){
-								etm.longActivity.pop();
-								Log.d(Tag, localelem.second);
-							}
+						//if we've caught up to our first join and this is the first run
+						if(onBoot)
+						{
+							onBoot = false;
+							runOnUiThread(new Runnable()
+							{
+								@Override
+								public void run()
+								{
+									etm.setFocusableInTouchMode(true);
+								}
+							});
 						}
+						Event ev;
+						//undo all events down to locals
+						while(mostRecent.hasPrevious())
+						{
+							//don't delete locals on an undo, it effectively undoes your undo.
+							//if(!etm.longActivity.isEmpty() && etm.longActivity.getFirst() == subId){
+							//	Log.i(Tag, "Undo/redo in locals");
+							//	etm.longActivity.pop();
+							//	etm.locals.pop();
+							//}
 							
-						else if(localelem.second.contains("Add"))
-						{
-							try {
-								Log.d(Tag, "Deleting local created");
-								runOnUiThread(new Runnable()
-								{
-									@Override
-									public void run()
-									{
-										etm.isAction = true;
-										etm.getText().delete(localelem.third, localelem.third + 1);
-										etm.isAction = false;
-									}
-								});
+							ev = mostRecent.previous();
+							//get out if we're now looking at the event
+							if(mostRecent == lastLocal)
+								break;
+							
+							if(ev.eventType.contains("Add"))
+							{
+								try {
+									Log.d(Tag, "Brute force: Deleting created " + ev.deleted);
+									uiHelper(ev, false);
+								}
+								catch (Exception e) {e.printStackTrace();}
 							}
-							catch (Exception e) {e.printStackTrace();}
+							else if(ev.eventType.contains("Delete"))
+							{
+								try {
+									Log.d(Tag, "Brute force: Adding deleted " + ev.deleted);
+									uiHelper(ev, true);
+								}
+								catch (Exception e) {e.printStackTrace();}
+							}
 						}
-						else if(localelem.second.contains("Delete"))
+						//mostRecent now equals the last local
+						//redo all events from last local on
+						boolean first = true;
+						while(mostRecent.hasNext())
 						{
-							try {
-								Log.d(Tag, "Adding local deleted " + localelem.second.split(",")[1] + " to " + localelem.third);
-								runOnUiThread(new Runnable()
-								{
-									@Override
-									public void run()
-									{
-										etm.isAction = true;
-										etm.getText().insert(localelem.third, localelem.second.split(",")[1]);
-										etm.isAction = false;
-									}
-								});
+							ev = mostRecent.next();
+							
+							if(ev.isLocal && first)
+							{
+								first = false;
+								Log.d(Tag, "Changed lastLocal: " + ev.eventType);
+								leastRecent = ev;
+								lastLocal = mostRecent;
 							}
-							catch (Exception e) {e.printStackTrace();}
+							
+							if(ev.eventType.contains("Add"))
+							{
+								try {
+									Log.d(Tag, "Brute force: Re-Adding created " + ev.deleted);
+									uiHelper(ev, true);
+								}
+								catch (Exception e) {e.printStackTrace();}
+							}
+							else if(ev.eventType.contains("Delete"))
+							{
+								try {
+									Log.d(Tag, "Brute force: Re-Deleting deleted " + ev.deleted);
+									uiHelper(ev, false);
+								}
+								catch (Exception e) {e.printStackTrace();}
+							}
 						}
 						
-						//run through globals up to event
-						while(!globals.isEmpty())
-						{
-							Tuple<byte[], String, Integer> elem = globals.pop();
-							Log.i(Tag, "Globals not empty yet! " + elem.second);
-							//the only events that modify elements are adds and deletes
-							//there are no owned adds/deletes in this array, it's all
-							//other people. Finding your first add/delete is the trigger to
-							//stop adding.
-							helper(elem.second, elem.first, false);
-						}
-					}
-					else
-					{
-						Log.i(Tag, eventType + " sub id: " + subId);
-						globals.add(new Tuple<byte[], String, Integer>(data, eventType, subId));
-						//myClient.resumeEvents();
-						return;
+						//set lastlocal to the value we found
+						lastLocal = next;
 					}
 				}
-				helper(eventType, data, isOwner);
+				helper(eventType, data, subId);
 				//myClient.resumeEvents();
 			}
 	
@@ -181,7 +208,6 @@ public class SubActivity extends Activity
 					broadcast("Join", "");
 					Log.i(Tag, "Broadcasted Join");
 					broadcastJoin = true;
-					String sessionName = myClient.currentSessionName();
 					runOnUiThread(new Runnable(){
 						@Override
 						public void run() {
@@ -194,8 +220,8 @@ public class SubActivity extends Activity
 						}
 						
 					});
+					etm.setSelection(0);
 					Log.d(Tag,"It should have changed title");
-
 				}
 				catch(Exception e) { 
 					e.printStackTrace();
@@ -211,6 +237,7 @@ public class SubActivity extends Activity
 					broadcast("Join", "");
 					Log.i(Tag, "Broadcasted Join");
 					sessionID = id;
+					isCreate = true;
 				}
 				catch(Exception e) {
 					e.printStackTrace();
@@ -265,7 +292,6 @@ public class SubActivity extends Activity
 				Log.i(Tag, "Session Joined " + sessionID);
 				try {
 					myClient.joinSession(sessionID, null);
-					endSessionVis = false;
 					invalidateOptionsMenu();
 				} 
 				catch (Exception e1) {
@@ -283,7 +309,46 @@ public class SubActivity extends Activity
 		
 	}
 	
-	public void helper(final String eventType, final byte[] data, final boolean owner)
+	public void appendPos(int pos, boolean isAdd)
+	{
+		Enumeration<Long> cursors = cursorLocs.keys();
+		while(cursors.hasMoreElements())
+		{
+			Long curr = cursors.nextElement();
+			if(cursorLocs.get(curr) >= pos)
+			{
+				if(isAdd)
+				{
+					Log.d(Tag, "Cursor for " + curr + " incremented, " + cursorLocs.get(curr) + " >= " + pos);
+					cursorLocs.put(curr, cursorLocs.get(curr) + 1);
+				}
+				else
+				{
+					Log.d(Tag, "Cursor for " + curr + " incremented, " + cursorLocs.get(curr) + " >= " + pos);
+					cursorLocs.put(curr, cursorLocs.get(curr) - 1);
+				}
+			}
+		}
+	}
+	
+	public void uiHelper(final Event ev, final boolean isAdd)
+	{
+		runOnUiThread(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				etm.isAction = true;
+				if(isAdd)
+					etm.getText().insert(ev.location, ev.deleted);
+				else
+					etm.getText().delete(ev.location, ev.location+1);
+				etm.isAction = false;
+			}
+		});
+	}
+	
+	public void helper(final String eventType, final byte[] data, final int subId)
 	{
 		runOnUiThread(new Runnable()
 		{
@@ -298,21 +363,26 @@ public class SubActivity extends Activity
 						EventMove eventMove = EventMove.parseFrom(data);
 						System.out.println(eventMove.getPartID() + " " + eventMove.getNewLoc());
 						cursorLocs.put(eventMove.getPartID(), eventMove.getNewLoc());
-						//Toast.makeText(getBaseContext(), eventType + " " + eventMove.getNewLoc(), //Toast.LENGTH_SHORT).show();
+						etm.allEvents.add(new Event(subId, eventType, "", (int)eventMove.getNewLoc(), false, false));
 					}
 					else if(eventType.contains("Add"))
 					{
 						try {
 							EventAdd eventAdd = EventAdd.parseFrom(data);
-							Log.d(Tag, eventAdd.getPartID() + " " + cursorLocs.get(eventAdd.getPartID()).toString() + " " + eventAdd.getChar());
+							Log.d(Tag, "id: " + eventAdd.getPartID());
+							Log.d(Tag, "loc: " + cursorLocs.get(eventAdd.getPartID()).toString());
+							Log.d(Tag, "char: " + eventAdd.getChar());
 							int appendPos = cursorLocs.get(eventAdd.getPartID()).intValue();
 							etm.isAction = true;
 							etm.getText().insert(appendPos, eventAdd.getChar());
-							if(!owner)
+							if(!(eventAdd.getPartID() == participantID))
 								etm.history.adjustIndexes(appendPos, true);
 							etm.isAction = false;
 							//Toast.makeText(getBaseContext(), "Add " + eventAdd.getChar() + " " + appendPos, //Toast.LENGTH_SHORT).show();
 							Log.i(Tag, etm.history.strMerge());
+							//fix cursor locs
+							appendPos(appendPos, true);
+							etm.allEvents.add(new Event(subId, eventType, eventAdd.getChar(), appendPos, false, false));
 						}
 						catch (Exception e) {e.printStackTrace();}
 					}
@@ -322,12 +392,15 @@ public class SubActivity extends Activity
 							EventDel eventDel = EventDel.parseFrom(data);
 							int appendPos = cursorLocs.get(eventDel.getPartID()).intValue();
 							etm.isAction = true;
+							String deleted = String.valueOf(etm.getText().charAt(appendPos));
 							etm.getText().delete(appendPos-1, appendPos);
-							if(!owner)
+							if(!(eventDel.getPartID() == participantID))
 								etm.history.adjustIndexes(appendPos, false);
 							etm.isAction = false;
-							//Toast.makeText(getBaseContext(), "Delete " + appendPos, //Toast.LENGTH_SHORT).show();
 							Log.i(Tag, etm.history.strMerge());
+							//fix cursor locs
+							appendPos(appendPos, false);
+							etm.allEvents.add(new Event(subId, eventType, deleted, appendPos, false, false));
 						}
 						catch (Exception e) {e.printStackTrace();}
 					}
@@ -337,13 +410,14 @@ public class SubActivity extends Activity
 						//start everyone at 0
 						cursorLocs.put(eventJoin.getPartID(), (long) 0);
 						Log.e(Tag, "Cursor Loc: " + eventJoin.getPartID() + " " + cursorLocs.get(eventJoin.getPartID()));
-						//Toast.makeText(getBaseContext(), eventType, //Toast.LENGTH_SHORT).show();
+						etm.allEvents.add(new Event(subId, eventType, "", -1, false, false));
+						Log.i(Tag, "added to allEvents");
 					}
 					else if(eventType.contains("Leave"))
 					{
 						EventLeave eventLeave = EventLeave.parseFrom(data);
 						cursorLocs.remove(eventLeave.getPartID());
-						//Toast.makeText(getBaseContext(), eventType, //Toast.LENGTH_SHORT).show();
+						etm.allEvents.add(new Event(subId, eventType, "", -1, false, false));
 					}
 					else
 						Log.d(Tag, "Invalid event Type: " + eventType);
@@ -360,10 +434,10 @@ public class SubActivity extends Activity
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
-		menu.getItem(3).setVisible(createSessionVis);
-		menu.getItem(4).setVisible(endSessionVis);
-		menu.getItem(5).setVisible(joinSessionVis);
-		menu.getItem(6).setVisible(leaveSessionVis);
+		menu.getItem(3).setVisible(false);
+		menu.getItem(4).setVisible(isCreate);
+		menu.getItem(5).setVisible(false);
+		menu.getItem(6).setVisible(true);
 		
 		return true;
 	}
@@ -381,10 +455,6 @@ public class SubActivity extends Activity
 			return true;
 		case R.id.action_endSession: 
 			Log.d("End", "Ended session");
-			createSessionVis = true;
-			endSessionVis = false;
-			joinSessionVis = true;
-			leaveSessionVis = false;
 			this.invalidateOptionsMenu();
 			try{
 				if(myClient.inSession())
@@ -398,10 +468,6 @@ public class SubActivity extends Activity
 			return true;
 		case R.id.action_leaveSession:
 			Log.d("Leave", "Leave session");
-			createSessionVis = true;
-			endSessionVis = false;
-			joinSessionVis = true;
-			leaveSessionVis = false;
 			this.invalidateOptionsMenu();
 			try{
 				if(myClient.inSession())
@@ -429,11 +495,18 @@ public class SubActivity extends Activity
 			{
 				if (type == "Join") {
 					EventJoin eventJoin = EventJoin.newBuilder().setPartID(participantID).build();
-					myClient.broadcast(eventJoin.toByteArray(), type);
+					int sub = myClient.broadcast(eventJoin.toByteArray(), type);
+					//helper(type, eventJoin.toByteArray(), sub);
+					if(leastRecent == null)
+					{
+						Log.d(Tag, "leastRecent set!");
+						leastRecent = new Event(sub, type, added, 0, true, false);
+					}
 				}
 				else if (type == "Leave") {
 					EventLeave eventLeave = EventLeave.newBuilder().setPartID(participantID).build();
-					myClient.broadcast(eventLeave.toByteArray(), type);
+					int sub = myClient.broadcast(eventLeave.toByteArray(), type);
+					//helper(type, eventLeave.toByteArray(), sub);
 				}
 			}
 			catch( CollabrifyException e ){Log.e(Tag, "error", e);}    	
