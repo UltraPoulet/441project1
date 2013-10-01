@@ -96,6 +96,7 @@ public class SubActivity extends Activity
 			public void onReceiveEvent(final long orderId, int subId, final String eventType, final byte[] data)
 			{
 				Log.d(Tag, "Received event: " + eventType);
+				Log.d(Tag, "" + etm.allEvents.size());
 				if(!etm.allEvents.isEmpty())
 				{
 					//start just after the last event
@@ -116,9 +117,15 @@ public class SubActivity extends Activity
 								@Override
 								public void run()
 								{
+									//Log.d(Tag, "We got here");
 									etm.setFocusableInTouchMode(true);
+									//etm.setSelection(0);
 								}
 							});
+							//Log.d(Tag, "It should change");
+							//etm.setSelection(0);
+							//etm.invalidate();
+							//Log.d(Tag, etm.)
 						}
 						Event ev;
 						//undo all events down to locals
@@ -188,9 +195,16 @@ public class SubActivity extends Activity
 						
 						//set lastlocal to the value we found
 						lastLocal = next;
+						if(onBoot){
+							etm.setSelection(0);
+						}
+					}
+					else{
+						
+						helper(eventType,data,subId);
 					}
 				}
-				helper(eventType, data, subId);
+				//helper(eventType, data, subId);
 				//myClient.resumeEvents();
 			}
 	
@@ -502,6 +516,7 @@ public class SubActivity extends Activity
 						Log.d(Tag, "leastRecent set!");
 						leastRecent = new Event(sub, type, added, 0, true, false);
 					}
+					etm.allEvents.add(leastRecent);
 				}
 				else if (type == "Leave") {
 					EventLeave eventLeave = EventLeave.newBuilder().setPartID(participantID).build();
