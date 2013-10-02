@@ -189,7 +189,6 @@ public class SubActivity extends Activity
 									Log.d(Tag, "Changed lastLocal: " + ev.eventType + " char: " + ev.deleted);
 									etm.leastRecent = ev;
 								}
-								Log.d(Tag, "Event: " + thisLast.subId + " " + ev.subId + " " + thisLast.isLocal + " " + ev.isLocal);
 								
 								if(ev.eventType.contains("Add"))
 								{
@@ -202,7 +201,7 @@ public class SubActivity extends Activity
 								else if(ev.eventType.contains("Delete"))
 								{
 									try {
-										Log.d(Tag, "Brute force: Re-Deleting " + (ev.isLocal?"local":"global") + " deleted " + ev.deleted);
+										Log.d(Tag, "Brute force: Re-Deleting " + (ev.isLocal?"local":"global") + " deleted " + ev.deleted + " at " + ev.location);
 										uiHelper(ev, false);
 									}
 									catch (Exception e) {e.printStackTrace();}
@@ -413,6 +412,10 @@ public class SubActivity extends Activity
 				if(isAdd)
 				{
 					try {
+						Log.d(Tag, "uiHelper Comparing " + ev.location + " to " + etm.getText().length());
+						if(ev.location > etm.getText().length())
+							etm.getText().append(ev.deleted);
+						else
 							etm.getText().insert(ev.location, ev.deleted);
 					}
 					catch (Exception e) {
@@ -422,8 +425,17 @@ public class SubActivity extends Activity
 				else
 				{
 					try {
-						Log.e(Tag, "Deleting at " + ev.location + " " + ev.location+1);
-						etm.getText().delete(ev.location, ev.location+1);
+						if(ev.location == etm.getText().length())
+						{
+							Log.e(Tag, "Deleting at " + (ev.location-1) + " " + ev.location);
+							etm.getText().delete(ev.location-1, ev.location);
+						}
+						else
+						{
+							Log.e(Tag, "Deleting at " + ev.location + " " + (ev.location+1));
+							etm.getText().delete(ev.location, ev.location+1);
+						}
+							
 						//etm.getText().delete(ev.location - 1, ev.location);
 						Log.e(Tag, "Delete successful?");
 					}
