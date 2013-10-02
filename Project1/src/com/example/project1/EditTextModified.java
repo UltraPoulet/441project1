@@ -28,7 +28,7 @@ public class EditTextModified extends EditText{
 	public boolean changedText = false;
 	public History history = new History();
 	private String prev;
-	private int lastPos;
+	public int lastPos;
 	private boolean notBoot;
 	public boolean isAction;
 	public CollabrifyClient myclient = null;
@@ -173,14 +173,20 @@ public class EditTextModified extends EditText{
 				{
 					broadcast("Move","", next.second+1);
 					broadcast("Delete",next.first,next.second);
-					broadcast("Move","",lastPos);
+					if(lastPos >= next.second )
+						broadcast("Move", "", lastPos-1);
+					else
+						broadcast("Move","",lastPos);
 					this.getText().delete(next.second, next.second + next.first.length());
 				}
 				else
 				{
 					broadcast("Move","",next.second);
 					broadcast("Add",next.first,next.second);
-					broadcast("Move","",lastPos);
+					if(lastPos >= next.second )
+						broadcast("Move", "", lastPos+1);
+					else
+						broadcast("Move","",lastPos);
 					this.getText().insert(next.second, next.first);
 				}
 				break;
@@ -190,14 +196,20 @@ public class EditTextModified extends EditText{
 				{
 					broadcast("Move","",next.second);
 					broadcast("Add",next.first,next.second);
-					broadcast("Move","",lastPos);
+					if(lastPos >= next.second )
+						broadcast("Move", "", lastPos+1);
+					else
+						broadcast("Move","",lastPos);
 					this.getText().insert(next.second, next.first);
 				}
 				else
 				{
 					broadcast("Move","", next.second+1);
 					broadcast("Delete",next.first,next.second);
-					broadcast("Move","",lastPos);
+					if(lastPos >= next.second )
+						broadcast("Move", "", lastPos-1);
+					else
+						broadcast("Move","",lastPos);
 					this.getText().delete(next.second, next.second + next.first.length());
 				}
 				break;
