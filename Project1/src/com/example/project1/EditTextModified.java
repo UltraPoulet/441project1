@@ -208,21 +208,6 @@ public class EditTextModified extends EditText{
 			try
 			{
 				long participantID = myclient.currentSessionParticipantId();
-<<<<<<< HEAD
-=======
-				if(first){
-					EventJoin eventJoin = EventJoin.newBuilder().setPartID(participantID).build();
-					int sub = myclient.broadcast(eventJoin.toByteArray(), "Join");
-					if(leastRecent == null)
-					{
-						Log.d(Tag, "leastRecent set!");
-						leastRecent = new Event(sub, "Join", added, 0, true, false);
-						allEvents.add(leastRecent);
-					}
-					first = false;
-					Log.d(Tag, "first =" + first);
-				}
->>>>>>> e91effeffde656c1ec78b816eb253b839948a6f2
 				if (type == "Move") {
 					EventMove eventMove = EventMove.newBuilder().setPartID(participantID).setNewLoc(pos).build();
 					int sub = myclient.broadcast(eventMove.toByteArray(), type);

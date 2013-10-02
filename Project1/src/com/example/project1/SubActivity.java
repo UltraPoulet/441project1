@@ -108,138 +108,147 @@ public class SubActivity extends Activity
 					ListIterator<Event> mostRecent = etm.allEvents.listIterator(etm.allEvents.size());
 					//if we're at event
 					Log.i(Tag, "subid: " + etm.allEvents.get(etm.allEvents.size() - 1).subId + " actual: " + subId);
-					if(etm.leastRecent != null && subId == etm.leastRecent.subId)
+					if(etm.leastRecent != null)
 					{
-						Event ev = null;
-						
-						if(!mostRecent.hasPrevious()){
-							Log.d(Tag, "mostRecent has no previous");
-						}
-						else{
-							Log.d(Tag, "it has previous?");
-						}
-						
-						//this needs to check for the GLOBAL recieve, and not undo anything before that again
-						//undo all events down to locals
-						while(mostRecent.hasPrevious())
+						if(subId == etm.leastRecent.subId)
 						{
+							Event ev = null;
 							
-							ev = mostRecent.previous();
-							
-							if(ev.eventType.contains("Add"))
-							{
-								try {
-									Log.d(Tag, "Brute force: Deleting " + (ev.isLocal?"local":"global") + " created " + ev.deleted);
-									uiHelper(ev, false);
-								}
-								catch (Exception e) {e.printStackTrace();}
-							}
-							else if(ev.eventType.contains("Delete"))
-							{
-								try {
-									Log.d(Tag, "Brute force: " + (ev.isLocal?"local":"global") + " Adding deleted " + ev.deleted);
-									uiHelper(ev, true);
-								}
-								catch (Exception e) {e.printStackTrace();}
+							if(!mostRecent.hasPrevious()){
+								Log.d(Tag, "mostRecent has no previous");
 							}
 							else{
-								Log.d(Tag, "This is something else " + ev.eventType);
-							}
-							//get out if we're now looking at the event
-							if(ev.skip)
-							{
-								Log.d(Tag, "Get out of jail free card");
-								break;
-							}
-						}
-						//mostRecent now equals the last local
-						if(mostRecent.hasNext() || mostRecent.hasPrevious())
-						{
-							Log.d(Tag, "Inside " + ev.eventType + " " + ev.isLocal);
-							ev.skip = true;
-							if(!ev.eventType.contains("Join") && !ev.eventType.contains("Move") && !ev.eventType.contains("Leave"))
-								appendPos(ev.location, (ev.eventType.contains("Add")));
-							else if(ev.eventType.contains("Move"))
-							{
-								Log.d(Tag, "Changing own cursor on move");
-								cursorLocs.put(participantID, (long) ev.location);
-							}
-						}
-						
-						boolean first = true;
-						
-						if(!mostRecent.hasNext()){
-							Log.d(Tag, "mostRecent has no next");
-						}
-						Event thisLast = ev;
-						
-						while(mostRecent.hasNext())
-						{
-							//ev=mostRecent.
-							ev = mostRecent.next();
-							
-							Log.d(Tag, "Params: " + ev.isLocal + " " + first + " " + !ev.skip);
-							//never hits this...
-							if(ev.isLocal && first && !ev.skip)
-							{
-								first = false;
-								ev.skip = true;
-								Log.d(Tag, "Changed lastLocal: " + ev.eventType + " char: " + ev.deleted);
-								etm.leastRecent = ev;
-							}
-							Log.d(Tag, "Event: " + thisLast.subId + " " + ev.subId + " " + thisLast.isLocal + " " + ev.isLocal);
-							
-							if(ev.eventType.contains("Add"))
-							{
-								try {
-									Log.d(Tag, "Brute force: Re-Adding " + (ev.isLocal?"local":"global") + " created " + ev.deleted);
-									uiHelper(ev, true);
-								}
-								catch (Exception e) {e.printStackTrace();}
-							}
-							else if(ev.eventType.contains("Delete"))
-							{
-								try {
-									Log.d(Tag, "Brute force: Re-Deleting " + (ev.isLocal?"local":"global") + " deleted " + ev.deleted);
-									uiHelper(ev, false);
-								}
-								catch (Exception e) {e.printStackTrace();}
+								Log.d(Tag, "it has previous?");
 							}
 							
-						}
-						if(ev.eventType.contains("Join"))
-						{
-							ListIterator<Event> it = etm.allEvents.listIterator();
-							while(it.hasNext())
+							//this needs to check for the GLOBAL recieve, and not undo anything before that again
+							//undo all events down to locals
+							while(mostRecent.hasPrevious())
 							{
-								Event eve = it.next();
-								Log.e(Tag, "Event Params: type: " + eve.eventType + " loc: " + eve.location + " del: " + eve.deleted + " local: " + eve.isLocal + " skip: " + eve.skip);
-							}
-						}
-						
-						if(first)
-						{
-							Log.d(Tag, "Setting leastRecent to null");
-							etm.leastRecent = null;
-						}
-						//if we've caught up to our first join and this is the first run
-						if(onBoot && eventType.contains("Join"))
-						{
-							onBoot = false;
-							runOnUiThread(new Runnable()
-							{
-								@Override
-								public void run()
+								
+								ev = mostRecent.previous();
+								
+								if(ev.eventType.contains("Add"))
 								{
-									etm.setFocusableInTouchMode(true);
-									Log.d(Tag, "Setting cursor to zero");
-									etm.setSelection(0);
+									try {
+										Log.d(Tag, "Brute force: Deleting " + (ev.isLocal?"local":"global") + " created " + ev.deleted);
+										uiHelper(ev, false);
+									}
+									catch (Exception e) {e.printStackTrace();}
 								}
-							});
+								else if(ev.eventType.contains("Delete"))
+								{
+									try {
+										Log.d(Tag, "Brute force: " + (ev.isLocal?"local":"global") + " Adding deleted " + ev.deleted);
+										uiHelper(ev, true);
+									}
+									catch (Exception e) {e.printStackTrace();}
+								}
+								else{
+									Log.d(Tag, "This is something else " + ev.eventType);
+								}
+								//get out if we're now looking at the event
+								if(ev.skip)
+								{
+									Log.d(Tag, "Get out of jail free card");
+									break;
+								}
+							}
+							//mostRecent now equals the last local
+							if(mostRecent.hasNext() || mostRecent.hasPrevious())
+							{
+								Log.d(Tag, "Inside " + ev.eventType + " " + ev.isLocal);
+								ev.skip = true;
+								if(!ev.eventType.contains("Join") && !ev.eventType.contains("Move") && !ev.eventType.contains("Leave"))
+									appendPos(ev.location, (ev.eventType.contains("Add")));
+								else if(ev.eventType.contains("Move"))
+								{
+									Log.d(Tag, "Changing own cursor on move");
+									cursorLocs.put(participantID, (long) ev.location);
+								}
+							}
+							
+							boolean first = true;
+							
+							if(!mostRecent.hasNext()){
+								Log.d(Tag, "mostRecent has no next");
+							}
+							Event thisLast = ev;
+							
+							while(mostRecent.hasNext())
+							{
+								//ev=mostRecent.
+								ev = mostRecent.next();
+								
+								Log.d(Tag, "Params: " + ev.isLocal + " " + first + " " + !ev.skip);
+								//never hits this...
+								if(ev.isLocal && first && !ev.skip)
+								{
+									first = false;
+									ev.skip = true;
+									Log.d(Tag, "Changed lastLocal: " + ev.eventType + " char: " + ev.deleted);
+									etm.leastRecent = ev;
+								}
+								Log.d(Tag, "Event: " + thisLast.subId + " " + ev.subId + " " + thisLast.isLocal + " " + ev.isLocal);
+								
+								if(ev.eventType.contains("Add"))
+								{
+									try {
+										Log.d(Tag, "Brute force: Re-Adding " + (ev.isLocal?"local":"global") + " created " + ev.deleted);
+										uiHelper(ev, true);
+									}
+									catch (Exception e) {e.printStackTrace();}
+								}
+								else if(ev.eventType.contains("Delete"))
+								{
+									try {
+										Log.d(Tag, "Brute force: Re-Deleting " + (ev.isLocal?"local":"global") + " deleted " + ev.deleted);
+										uiHelper(ev, false);
+									}
+									catch (Exception e) {e.printStackTrace();}
+								}
+								
+							}
+							if(ev.eventType.contains("Join"))
+							{
+								ListIterator<Event> it = etm.allEvents.listIterator();
+								while(it.hasNext())
+								{
+									Event eve = it.next();
+									Log.e(Tag, "Event Params: type: " + eve.eventType + " loc: " + eve.location + " del: " + eve.deleted + " local: " + eve.isLocal + " skip: " + eve.skip);
+								}
+							}
+							
+							if(first)
+							{
+								Log.d(Tag, "Setting leastRecent to null");
+								etm.leastRecent = null;
+							}
+							//if we've caught up to our first join and this is the first run
+							if(onBoot && eventType.contains("Join"))
+							{
+								onBoot = false;
+								runOnUiThread(new Runnable()
+								{
+									@Override
+									public void run()
+									{
+										etm.setFocusableInTouchMode(true);
+										Log.d(Tag, "Setting cursor to zero");
+										etm.setSelection(0);
+									}
+								});
+							}
+						}
+						else
+						{
+							Log.e(Tag, "SubID's not equal");
+							helper(eventType, data, subId);
 						}
 					}
 					else
 					{
+						Log.e(Tag, "Least recent is null");
 						helper(eventType, data, subId);
 					}
 				}
@@ -453,7 +462,13 @@ public class SubActivity extends Activity
 							Log.d(Tag, "char: " + eventAdd.getChar());
 							int appendPos = cursorLocs.get(eventAdd.getPartID()).intValue();
 							etm.isAction = true;
-							etm.getText().insert(appendPos, eventAdd.getChar());
+							if(appendPos > etm.getTextSize())
+							{
+								Log.d(Tag, "Adding to end");
+								etm.getText().append(eventAdd.getChar());
+							}
+							else
+								etm.getText().insert(appendPos, eventAdd.getChar());
 							if(!(eventAdd.getPartID() == participantID))
 								etm.history.adjustIndexes(appendPos, true);
 							etm.isAction = false;
