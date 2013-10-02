@@ -218,6 +218,8 @@ public class EditTextModified extends EditText{
 						leastRecent = new Event(sub, "Join", added, 0, true, false);
 						allEvents.add(leastRecent);
 					}
+					first = false;
+					Log.d(Tag, "first =" + first);
 				}
 				if (type == "Move") {
 					EventMove eventMove = EventMove.newBuilder().setPartID(participantID).setNewLoc(pos).build();
