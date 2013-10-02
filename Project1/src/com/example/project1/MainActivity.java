@@ -117,10 +117,10 @@ public class MainActivity extends Activity {
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
-		menu.getItem(3).setVisible(createSessionVis);
-		menu.getItem(4).setVisible(endSessionVis);
-		menu.getItem(5).setVisible(joinSessionVis);
-		menu.getItem(6).setVisible(leaveSessionVis);
+		menu.getItem(2).setVisible(createSessionVis);
+		menu.getItem(3).setVisible(endSessionVis);
+		menu.getItem(4).setVisible(joinSessionVis);
+		menu.getItem(5).setVisible(leaveSessionVis);
 
 		if(text != null)
 		{
@@ -136,8 +136,6 @@ public class MainActivity extends Activity {
 		EditTextModified etm = (EditTextModified)this.getCurrentFocus();
 		text = etm.getText().toString();
 		switch(item.getItemId()){
-		case R.id.action_settings:
-			return true;
 		case R.id.action_undo:
 			etm.UndoRedoHandler(true);
 			return true;

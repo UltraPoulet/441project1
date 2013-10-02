@@ -39,6 +39,7 @@ public class SubActivity extends Activity
 	EditTextModified etm;
 	private boolean onBoot = true;
 	private boolean isCreate = false;
+	private int ourJoin;
 	
 	@Override
 	public void onWindowFocusChanged(boolean hasFocus) {
@@ -50,12 +51,12 @@ public class SubActivity extends Activity
 				Log.i(Tag, "hey, we worked!");
 				etm.myclient = myClient;
 				etm.subActivity = true;
-				if(isCreate)
+				/*if(isCreate)
 				{
 					Log.e(Tag, "Added join");
-					etm.allEvents.add(new Event(-1, "Join", "", 0, true, true));
+					etm.allEvents.add(new Event(-1, "Join", "", 0, true, false));
 					onBoot = false;
-				}
+				}*/
 			}
 		}
 		super.onWindowFocusChanged(hasFocus);
@@ -101,6 +102,20 @@ public class SubActivity extends Activity
 				{
 					Long curr = cursors.nextElement();
 					Log.d(Tag, curr + " at: " + cursorLocs.get(curr));
+				}
+				if(ourJoin == subId)
+				{
+					onBoot = false;
+					runOnUiThread(new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							etm.setFocusableInTouchMode(true);
+							Log.d(Tag, "Setting cursor to zero");
+							etm.setSelection(0);
+						}
+					});
 				}
 				if(!etm.allEvents.isEmpty())
 				{
@@ -223,21 +238,7 @@ public class SubActivity extends Activity
 								Log.d(Tag, "Setting leastRecent to null");
 								etm.leastRecent = null;
 							}
-							//if we've caught up to our first join and this is the first run
-							if(onBoot && eventType.contains("Join"))
-							{
-								onBoot = false;
-								runOnUiThread(new Runnable()
-								{
-									@Override
-									public void run()
-									{
-										etm.setFocusableInTouchMode(true);
-										Log.d(Tag, "Setting cursor to zero");
-										etm.setSelection(0);
-									}
-								});
-							}
+							
 						}
 						else
 						{
@@ -253,6 +254,7 @@ public class SubActivity extends Activity
 				}
 				else{
 					Log.d(Tag, "allEvents empty");
+					helper(eventType, data, subId);
 				}
 				//myClient.resumeEvents();
 			}
@@ -381,6 +383,7 @@ public class SubActivity extends Activity
 		while(cursors.hasMoreElements())
 		{
 			Long curr = cursors.nextElement();
+			Log.d(Tag, "Comparing " + cursorLocs.get(curr) + " to " + pos + " for " + curr);
 			if(cursorLocs.get(curr) >= pos)
 			{
 				if(isAdd)
@@ -474,14 +477,15 @@ public class SubActivity extends Activity
 							Log.d(Tag, "char: " + eventAdd.getChar());
 							int appendPos = cursorLocs.get(eventAdd.getPartID()).intValue();
 							etm.isAction = true;
-							if(appendPos > etm.getTextSize())
+							if(appendPos >= etm.getText().length())
 							{
 								Log.d(Tag, "Adding to end");
 								etm.getText().append(eventAdd.getChar());
 							}
 							else
 								etm.getText().insert(appendPos, eventAdd.getChar());
-							if(!(eventAdd.getPartID() == participantID))
+							Log.d(Tag, "Is " + eventAdd.getPartID() + " = " + participantID);
+							if(eventAdd.getPartID() != participantID)
 								etm.history.adjustIndexes(appendPos, true);
 							etm.isAction = false;
 							//Toast.makeText(getBaseContext(), "Add " + eventAdd.getChar() + " " + appendPos, //Toast.LENGTH_SHORT).show();
@@ -542,10 +546,10 @@ public class SubActivity extends Activity
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
-		menu.getItem(3).setVisible(false);
-		menu.getItem(4).setVisible(isCreate);
-		menu.getItem(5).setVisible(false);
-		menu.getItem(6).setVisible(true);
+		menu.getItem(2).setVisible(false);
+		menu.getItem(3).setVisible(isCreate);
+		menu.getItem(4).setVisible(false);
+		menu.getItem(5).setVisible(true);
 		
 		return true;
 	}
@@ -553,8 +557,6 @@ public class SubActivity extends Activity
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item){
 		switch(item.getItemId()){
-		case R.id.action_settings:
-			return true;
 		case R.id.action_undo:
 			etm.UndoRedoHandler(true);
 			return true;
@@ -608,13 +610,13 @@ public class SubActivity extends Activity
 						return;
 					}
 					EventJoin eventJoin = EventJoin.newBuilder().setPartID(participantID).build();
-					int sub = myClient.broadcast(eventJoin.toByteArray(), type);
+					ourJoin = myClient.broadcast(eventJoin.toByteArray(), type);
 					//helper(type, eventJoin.toByteArray(), sub);
 					if(etm.leastRecent == null)
 					{
 						Log.d(Tag, "etm.leastRecent set!");
-						etm.leastRecent = new Event(sub, type, added, 0, true, false);
-						etm.allEvents.add(etm.leastRecent);
+						//etm.leastRecent = new Event(sub, type, added, 0, true, false);
+						//etm.allEvents.add(etm.leastRecent);
 					}
 				}
 				else if (type == "Leave") {

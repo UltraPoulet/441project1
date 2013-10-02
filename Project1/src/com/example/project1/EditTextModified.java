@@ -18,6 +18,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.widget.EditText;
+import android.widget.Toast;
 
 //look at broadcasting undos...moving the cursor to the position it was at is messing things up
 //when it's the last character you're undoing
@@ -137,13 +138,19 @@ public class EditTextModified extends EditText{
 		if(isUndo)
 		{
 			if(history.undoHistory.size() == 0)
+			{
+				Toast.makeText(getContext(), "Nothing to undo!", Toast.LENGTH_SHORT).show();
 				return;
+			}
 			next = history.undoHistory.pop();
 		}
 		else
 		{
 			if(history.redoHistory.size() == 0)
+			{
+				Toast.makeText(getContext(), "Nothing to redo!", Toast.LENGTH_SHORT).show();
 				return;
+			}
 			next = history.redoHistory.pop();
 		}
 		//we need to exclude a cursor move, since the value is actually the previous location
@@ -181,14 +188,14 @@ public class EditTextModified extends EditText{
 			case CHAR_DELETE:
 				if(isUndo)
 				{
-					broadcast("Move","",next.second+1);
+					broadcast("Move","",next.second);
 					broadcast("Add",next.first,next.second);
 					broadcast("Move","",lastPos);
 					this.getText().insert(next.second, next.first);
 				}
 				else
 				{
-					broadcast("Move","", next.second);
+					broadcast("Move","", next.second+1);
 					broadcast("Delete",next.first,next.second);
 					broadcast("Move","",lastPos);
 					this.getText().delete(next.second, next.second + next.first.length());
