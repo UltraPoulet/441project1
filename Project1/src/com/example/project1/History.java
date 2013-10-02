@@ -25,23 +25,30 @@ public class History
 		while(iter.hasNext())
 		{
 			curr = iter.next();
+			Log.d("History", "Comparing " + curr.second + " to " + pos);
 			if(isAdd)
+			{
 				if(curr.second >= pos)
 				{
 					Log.i("History", "Adjusted item: " + curr.first + "," + curr.second + " to pos " + (curr.second + 1));
 					curr.second++;
 				}
+			}
 			else
+			{
+				Log.d("history", String.valueOf(curr.second >= pos));
 				if(curr.second >= pos)
 				{
 					Log.i("History", "Adjusted item: " + curr.first + "," + curr.second + " to pos " + (curr.second - 1));
 					curr.second--;
 				}
+			}
 		}
 		iter = redoHistory.iterator();
 		while(iter.hasNext())
 		{
 			curr = iter.next();
+			Log.d("History", "Comparing " + curr.second + " to " + pos);
 			if(isAdd)
 				if(curr.second >= pos)
 				{

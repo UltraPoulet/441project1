@@ -19,6 +19,9 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.widget.EditText;
 
+//look at broadcasting undos...moving the cursor to the position it was at is messing things up
+//when it's the last character you're undoing
+
 public class EditTextModified extends EditText{
 	
 	public boolean changedText = false;
@@ -35,7 +38,6 @@ public class EditTextModified extends EditText{
 	private String Tag = "WeWrite ETM";
 	private boolean sendMove = false;
 	public Event leastRecent = null;
-	public boolean first = false;
 	
 	public EditTextModified(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
@@ -58,8 +60,9 @@ public class EditTextModified extends EditText{
 			Log.d(Tag, "textChanged or booting");
 			changedText = false;
 		}
-		if(sendMove)
+		else if(sendMove)
 		{
+			//TODO:not sending our own move to our cursorLocs
 			Log.d(Tag, "Position: " + selStart);
 			broadcast("Move", "", selStart);
 			sendMove = false;
@@ -164,35 +167,31 @@ public class EditTextModified extends EditText{
 					broadcast("Move","", next.second+1);
 					broadcast("Delete",next.first,next.second);
 					broadcast("Move","",lastPos);
-					if(!subActivity)
-						this.getText().delete(next.second, next.second + next.first.length());
+					this.getText().delete(next.second, next.second + next.first.length());
 				}
 				else
 				{
 					broadcast("Move","",next.second);
 					broadcast("Add",next.first,next.second);
 					broadcast("Move","",lastPos);
-					if(!subActivity)
-						this.getText().insert(next.second, next.first);
+					this.getText().insert(next.second, next.first);
 				}
 				break;
 			//faulted out once, appears functional now?
 			case CHAR_DELETE:
 				if(isUndo)
 				{
-					broadcast("Move","",next.second);
+					broadcast("Move","",next.second+1);
 					broadcast("Add",next.first,next.second);
 					broadcast("Move","",lastPos);
-					if(!subActivity)
-						this.getText().insert(next.second, next.first);
+					this.getText().insert(next.second, next.first);
 				}
 				else
 				{
-					broadcast("Move","", next.second+1);
+					broadcast("Move","", next.second);
 					broadcast("Delete",next.first,next.second);
 					broadcast("Move","",lastPos);
-					if(!subActivity)
-						this.getText().delete(next.second, next.second + next.first.length());
+					this.getText().delete(next.second, next.second + next.first.length());
 				}
 				break;
 			default:
@@ -209,6 +208,8 @@ public class EditTextModified extends EditText{
 			try
 			{
 				long participantID = myclient.currentSessionParticipantId();
+<<<<<<< HEAD
+=======
 				if(first){
 					EventJoin eventJoin = EventJoin.newBuilder().setPartID(participantID).build();
 					int sub = myclient.broadcast(eventJoin.toByteArray(), "Join");
@@ -221,6 +222,7 @@ public class EditTextModified extends EditText{
 					first = false;
 					Log.d(Tag, "first =" + first);
 				}
+>>>>>>> e91effeffde656c1ec78b816eb253b839948a6f2
 				if (type == "Move") {
 					EventMove eventMove = EventMove.newBuilder().setPartID(participantID).setNewLoc(pos).build();
 					int sub = myclient.broadcast(eventMove.toByteArray(), type);
